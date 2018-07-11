@@ -25,9 +25,10 @@ num_steps = 100000
 
 print('{} steps, E={}, kBT={}, sqrt(2D)={}, D/kBT={}, dt={}'.format(n, E, kBT, s_2D, D_kBT, dt))
 for t in range(num_steps):
-	sys.stderr.write('step {}/{}    \r'.format(t, num_steps))
+	sys.stderr.write('step {}/{}            \r'.format(t, num_steps))
 
-	x.append(x[-1] + force(x[-1])*D_kBT*dt + np.random.normal(0, s_2D)*s_dt)
-	print(t, x[-1])
+	v_dt = force(x[-1])*D_kBT*dt + np.random.normal(0, s_2D)*s_dt
+	x.append(x[-1] + v_dt)
+	print(t, x[-1], v_dt)
 	if np.isnan(x[-1]):
 		break
