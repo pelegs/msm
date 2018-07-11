@@ -1,0 +1,5 @@
+* Double well potential: U(x)=E(cx^{4}-x^{2}).
+* Damped Langevin Dynamics (Brownian Dynamics).
+* Particle ran for 1E+06 steps.
+* Depending on barrier height and thermal energy (via R(t)),
+  a single or double-modal distribution is observed (as expected).
