@@ -2,27 +2,32 @@
     model for a basic analysis """
 
 import numpy as np
+import sys
 
 def force(x):
     """ F = -dU(x)/dx """
-    F = -np.sum([(-1)**k * c/(2*k) * x**(2*k-1)
-                 for k, c in enumerate(constants)])
-    return F
+    F = -E*np.sum([2*(k+1) * c * x**(2*k+1) * (-1)**(n-k)
+                   for k, c in enumerate(constants)])
+    return 0.0#F
 
-def v(x):
-    return force(x) + np.random.normal(0, s2D)
-
-constants = [.0, .5, .01] 
-E = 5
-D = 1.0
-kBT = 100
-s2D = np.sqrt(2*D)
+constants = [.0, 0.1]
+n = len(constants)
+E = 1.0E-5
+D = 1.0E-5
+kBT = 1.0E-1
+s_2D = np.sqrt(2*D)
 D_kBT = D/kBT
 
-dt = 0.01
-x = [-1]
-num_steps = 1000000
+dt = 1E-1
+s_dt = np.sqrt(dt)
+x = [1/np.sqrt(2*constants[1])]
+num_steps = 100000
 
+print('{} steps, E={}, kBT={}, sqrt(2D)={}, D/kBT={}, dt={}'.format(n, E, kBT, s_2D, D_kBT, dt))
 for t in range(num_steps):
-    x.append(x[-1] + v(x[-1])*dt)
-    print(t, x[-1])
+	sys.stderr.write('step {}/{}    \r'.format(t, num_steps))
+
+	x.append(x[-1] + force(x[-1])*D_kBT*dt + np.random.normal(0, s_2D)*s_dt)
+	print(t, x[-1])
+	if np.isnan(x[-1]):
+		break
