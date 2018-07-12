@@ -20,7 +20,7 @@ unset table
 
 stats "tempfile" u 1
 set xrange[STATS_min:STATS_max]
-binwidth = (STATS_max - STATS_min)/100
+binwidth = (STATS_max - STATS_min)/200
 set boxwidth binwidth
 
 stats "tempfile" u 2
