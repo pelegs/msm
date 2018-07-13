@@ -1,5 +1,4 @@
 set terminal png size 1000,1000
-set output 'data.png'
 
 E=1
 c=1000
@@ -14,15 +13,16 @@ binwidth=0.1
 set boxwidth binwidth
 bin(x, width) = width*floor(x/width) + binwidth/2.0
 
-set table "tempfile" 
-plot "data" u (bin($2, binwidth)):(1.0) smooth freq w boxes
-unset table
-
-stats "tempfile" u 1
+set output 'data_position.png'
+stats "data" u 2
 set xrange[STATS_min:STATS_max]
 binwidth = (STATS_max - STATS_min)/200
 set boxwidth binwidth
+plot "data" u (bin($2, binwidth)):(1.0/STATS_max) smooth freq w boxes notitle
 
-stats "tempfile" u 2
-plot "data" u (bin($2, binwidth)):(1.0/STATS_max) smooth freq w boxes notitle,\
-	 U1(x) notitle
+set output 'data_velocity.png'
+stats "data" u 3
+set xrange[STATS_min:STATS_max]
+binwidth = (STATS_max - STATS_min)/200
+set boxwidth binwidth
+plot "data" u (bin($3, binwidth)):(1.0/STATS_max) smooth freq w boxes notitle
