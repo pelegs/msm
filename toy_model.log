@@ -3,3 +3,6 @@
 * Particle ran for 1E+06 steps.
 * Depending on barrier height and thermal energy (via R(t)),
   a single or double-modal distribution is observed (as expected).
+
+
+* Check velocity as function of position (NOT just histogram)
