@@ -15,27 +15,29 @@ def force(x):
 
 constants = [1.0, 0.2, 0.01]
 n = len(constants)-1
-E = 1.0E+1
-D = 1.0E-1
+E = 5.0E+1
+D = 5.0E-2
 kBT = 1E-0
 s_2D = np.sqrt(2*D)
 D_kBT = D/kBT
 
 dt = 1E-1
 s_2Ddt = np.sqrt(2*D*dt)
-x = [0]#[-1/np.sqrt(2*constants[1])]
-v_dt = [0]
-num_steps = 3000000
+x = 0.0 #[0]
+v_dt = 0.0 #[0]
+num_steps = 10000000
 
-#print('#{} steps, E={}, kBT={}, sqrt(2D)={}, D/kBT={}, dt={}'.format(n, E, kBT, s_2D, D_kBT, dt))
+print('#{} steps, E={}, kBT={}, sqrt(2D)={}, D/kBT={}, dt={}'.format(n, E, kBT, s_2D, D_kBT, dt))
 for t in range(num_steps):
-	sys.stderr.write('step {}/{}            \r'.format(t, num_steps))
-
-	v_dt.append(force(x[-1])*D_kBT*dt**2 + np.random.normal(0, 1)*s_2D)
-	x.append(x[-1] + v_dt[-1])
-	print(t, x[-1], v_dt[-1])
-	if (np.isnan(x[-1]) or np.isnan(v_dt[-1])):
-		break
+    sys.stderr.write('step {}/{}            \r'.format(t, num_steps))
+    
+    #v_dt.append(force(x[-1])*D_kBT*dt**2 + np.random.normal(0, 1)*s_2D)
+    #x.append(x[-1] + v_dt[-1])
+    v_dt = force(x)*D_kBT*dt**2 + np.random.normal(0, 1)*s_2D
+    x += v_dt
+    print(t, x, v_dt)
+    if (np.isnan(x) or np.isnan(v_dt)):
+    	break
 
 #x_bins = 500
 #x_interval = np.linspace(min(x), max(x), x_bins)
