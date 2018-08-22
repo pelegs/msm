@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy as np
+import sys
 
 E = 0.01
 dt = 0.01
@@ -39,3 +40,10 @@ class particle:
         noise = S2D * np.random.normal(0.0, 1.0)
         v = drift + noise
         self.x = self.x + v*dt
+
+def run_simulation(particle, potential, t_max, name):
+    with open('data/{}.data'.format(name), 'w', 1) as f:
+        for t in np.arange(0, t_max, dt):
+            sys.stderr.write('\rt={:3.4f} (of {:3.4f})   '.format(t, t_max))
+            particle.move(potential, dt)
+            f.write('{} {} {}\n'.format(t, particle.x, potential.get_value(particle.x)))
