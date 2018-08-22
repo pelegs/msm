@@ -2,6 +2,7 @@
 
 import numpy as np
 import sys
+from tqdm import tqdm
 
 E = 0.01
 dt = 0.01
@@ -43,7 +44,7 @@ class particle:
 
 def run_simulation(particle, potential, t_max, name):
     with open('data/{}.data'.format(name), 'w', 1) as f:
-        for t in np.arange(0, t_max, dt):
+        for t in tqdm(np.arange(0, t_max, dt)):
             sys.stderr.write('\rt={:3.4f} (of {:3.4f})   '.format(t, t_max))
             particle.move(potential, dt)
             f.write('{} {} {}\n'.format(t, particle.x, potential.get_value(particle.x)))

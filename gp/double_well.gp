@@ -16,4 +16,4 @@ unset table
 set term png size 1200,1200
 set output "graphs/double_well.png"
 set style fill solid 0.5
-plot "data/double_well.data" u 2:3 w l lw 0.5 lc rgb "#3200FA" title "U(x)"
+plot "data/double_well.data" using (bin($2,binwidth)):(1.0/m) smooth freq with boxes notitle
