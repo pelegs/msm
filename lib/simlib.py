@@ -9,10 +9,10 @@ dt = 0.01
 D = 5.0
 KBT = 1.0
 D_KBT = D/KBT
-S2D = np.sqrt(2*D)
+S2D = np.sqrt(2*D*dt)
 
 class gaussian:
-    def __init__(self, center=0, stdev=1, amplitude=1):
+    def __init__(self, center=0.0, stdev=1.0, amplitude=1.0):
         self.m = center
         self.s = stdev
         self.a = amplitude
@@ -36,15 +36,23 @@ class particle:
     def __init__(self, x0=0):
         self.x = x0
 
-    def move(self, u, dt):
-        drift = u.get_force(self.x) * D_KBT
-        noise = S2D * np.random.normal(0.0, 1.0)
-        v = drift + noise
-        self.x = self.x + v*dt
+    def move(self, u, dt, drift=True, noise=True):
+        v = 0.0
+        if drift:
+            v += u.get_force(self.x) * D_KBT
+        if noise:
+            v += S2D * np.random.normal(0.0, 1.0)
+        self.x += v
 
-def run_simulation(particle, potential, t_max, name):
+def run_simulation(particle_list, potential, t_max, name, drift=True, noise=True):
     with open('data/{}.data'.format(name), 'w', 1) as f:
         for t in tqdm(np.arange(0, t_max, dt)):
             sys.stderr.write('\rt={:3.4f} (of {:3.4f})   '.format(t, t_max))
-            particle.move(potential, dt)
-            f.write('{} {} {}\n'.format(t, particle.x, potential.get_value(particle.x)))
+            for particle in particle_list:
+                particle.move(potential, dt, drift, noise)
+            f.write('{} {}\n'.format(t,
+                                     np.average([particle.x for particle in particle_list]),
+                                     )
+                    )
+                                        
+
