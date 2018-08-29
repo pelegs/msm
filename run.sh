@@ -13,7 +13,8 @@ then
           sed "s/NAMEX/$name/g" gp/base.gp > gp/$name.gp
     fi
     echo "Running simulation $name, with $num_particles particles and max time $max_t"
-	python3 simulation/$name.py $name $num_particles $max_t && gnuplot gp/$name.gp && eog graphs/$name.png
+	  python3 simulation/$name.py --name $name -n $num_particles --maxt $max_t && gnuplot gp/$name.gp && eog graphs/$name.png
+
 elif [[ $action == "graph" ]]
 then
     gnuplot gp/$name.gp && eog graphs/$name.png

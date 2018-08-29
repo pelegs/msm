@@ -2,14 +2,58 @@
 
 import numpy as np
 import sys
+
+# For progress bar
 from tqdm import tqdm
 
-E = 0.01
-dt = 0.01
-D = 5.0
-KBT = 1.0
-D_KBT = D/KBT
-S2D = np.sqrt(2*D*dt)
+# Parsing arguments
+def parse_cmdline_args():
+    import argparse
+    parser = argparse.ArgumentParser(description='Generating free energy landscapes from gaussian functions')
+    parser.add_argument('--name', action='store', dest='name',
+                        help='Simulation name',
+                        type=str, default='default_name')
+    parser.add_argument('-n', action='store', dest='num_particles',
+                        help='Number of particles',
+                        type=int, default=1)
+    parser.add_argument('--maxt', action='store', dest='max_t',
+                        help='Max time step',
+                        type=int, default=1000)
+    parser.add_argument('--dt', action='store', dest='dt',
+                        help='Time step',
+                        type=float, default=1.0)
+    parser.add_argument('-E', action='store', dest='E',
+                        help='Potential energy coefficient',
+                        type=float, default=1.0)
+    parser.add_argument('-D', action='store', dest='D',
+                        help='Diffusion coefficient',
+                        type=float, default=1.0)
+    parser.add_argument('--KBT', action='store', dest='KBT',
+                        help='Generalized energy',
+                        type=float, default=1.0)
+    args = parser.parse_args()
+    return args
+
+def set_parameters(args):
+    global name
+    global num_particles
+    global max_t
+    global dt
+    global E
+    global D
+    global KBT
+    global D_KBT
+    global S2D
+
+    name = args.name
+    num_particles = args.num_particles
+    max_t = args.max_t
+    dt = args.dt
+    E = args.E
+    D = args.D
+    KBT = args.KBT
+    D_KBT = D/KBT
+    S2D = np.sqrt(2*D*dt)
 
 class gaussian:
     def __init__(self, center=0.0, stdev=1.0, amplitude=1.0):
@@ -54,5 +98,19 @@ def run_simulation(particle_list, potential, t_max, name, drift=True, noise=True
                                      np.average([particle.x for particle in particle_list]),
                                      )
                     )
-                                        
 
+
+# Create global parameters
+name = 'default_name'
+num_particles = 1
+max_t = 1
+dt = 1.0
+E = 1.0
+D = 1.0
+KBT = 1.0
+D_KBT = 1.0
+S2D = 1.0
+
+# Parse and set parameters
+args = parse_cmdline_args()
+set_parameters(args)
