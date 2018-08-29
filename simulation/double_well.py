@@ -7,8 +7,8 @@ sys.path.append('lib')
 from simlib import *
 
 # Potential
-g0 = gaussian(center=-2.0)
-g1 = gaussian(center=+2.0)
+g0 = gaussian(center=-4.0)
+g1 = gaussian(center=+4.0)
 u = potential(gaussians=[g0, g1])
 
 # Particles

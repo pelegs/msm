@@ -55,6 +55,14 @@ def set_parameters(args):
     D_KBT = D/KBT
     S2D = np.sqrt(2*D*dt)
 
+def parse_gaussians(gfile):
+    with open(gfile, 'w') as f:
+        lines = [line.rstrip('\n') for line in f]
+    gaussians = [gaussian(center=float(params[0]), stdev=float(params[1]), amplitude=float(params[2]))
+                 for line in lines
+                 for params in line.split(' ')]
+    return gaussians
+
 class gaussian:
     def __init__(self, center=0.0, stdev=1.0, amplitude=1.0):
         self.m = center
