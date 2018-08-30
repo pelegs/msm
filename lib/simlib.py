@@ -56,11 +56,12 @@ def set_parameters(args):
     S2D = np.sqrt(2*D*dt)
 
 def parse_gaussians(gfile):
-    with open(gfile, 'w') as f:
+    with open('simulation/{}.g'.format(gfile), 'r') as f:
         lines = [line.rstrip('\n') for line in f]
-    gaussians = [gaussian(center=float(params[0]), stdev=float(params[1]), amplitude=float(params[2]))
-                 for line in lines
-                 for params in line.split(' ')]
+    gaussians = []
+    for line in lines:
+        m, s, A = [float(x) for x in line.split(' ')]
+        gaussians.append(gaussian(m, s, A))
     return gaussians
 
 class gaussian:
