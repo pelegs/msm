@@ -10,14 +10,15 @@ from simlib import *
 sim_name = sys.argv[1]
 
 # Parameters
-parameters, gs = parse_parameters_file(sim_name)
-u = potential(gaussians=gs)
+parameters, gaussians = parse_parameters_file(sim_name)
+u = potential(parameters, gaussians)
 
 # Particles
-particles = [particle() for _ in range(num_particles)]
+particles = [particle(parameters) for _ in range(parameters['num_particles'])]
 
 # Simulation
 run_simulation(sim_name=sim_name,
+               parameters=parameters,
                particle_list=particles,
                potential=u,
                drift=True,
