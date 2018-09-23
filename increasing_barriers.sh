@@ -2,5 +2,5 @@
 
 for amp in "$@"
 do
-    printf %"s-10 1 $amp\n10 1 $amp" > "simulation/double_well_barrier_$amp.g"
+    printf %"s1 10000000 1 $amp 1 1\n-5 1 1\n5 1 1" > "simulation/double_well_barrier_$amp.g"
 done

@@ -10,7 +10,7 @@ then
           cp gp/base.gp gp/$NAME.gp
           sed "s/NAMEX/$NAME/g" gp/base.gp > gp/$NAME.gp
     fi
-    python3 simulation/simulate.py $NAME && gnuplot gp/$NAME.gp && eog graphs/$NAME.png
+    python3 simulation/simulate.py $NAME
 
 elif [[ $ACTION == "graph" ]]
 then
@@ -20,7 +20,10 @@ then
           sed "s/NAMEX/$NAME/g" gp/base.gp > gp/$NAME.gp
     fi
     echo "Running gnuplot..."
-    gnuplot gp/$NAME.gp && eog graphs/$NAME.png
+    gnuplot gp/$NAME.gp
+elif [[ $ACTION == "view" ]]
+then
+    eog graphs/$NAME.png
 else
     echo "'$ACTION' is not a valid action :("
 fi
