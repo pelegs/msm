@@ -21,6 +21,7 @@ def parse_parameters_file(sim_name):
                 'E': float(line_params[3]),
                 'D': float(line_params[4]),
                 'KBT': float(line_params[5]),
+                'x0': float(line_params[6]),
                 'D_KBT': float(line_params[4])/float(line_params[5]),
                 'S2D': np.sqrt(2*float(line_params[4]))
             }
@@ -55,9 +56,9 @@ class potential:
 
 
 class particle:
-    def __init__(self, parameters, x0=0):
+    def __init__(self, parameters):
         self.parameters = parameters
-        self.x = x0
+        self.x = parameters['x0']
 
     def move(self, u, dt, drift=True, noise=True):
         v = 0.0
@@ -70,11 +71,23 @@ class particle:
 
 def run_simulation(sim_name, parameters, particle_list,
                    potential, drift=True, noise=True):
+    sys.stderr.write('''
+running simulation {}, with following parameters:
+number of particles = {}, x0 = {},
+max_t = {}, dt = {},
+E = {}, D = {},
+KBT = {}\n\n'''.format(sim_name,
+                       parameters['num_particles'], parameters['x0'],
+                       parameters['max_t'], parameters['dt'],
+                       parameters['E'], parameters['D'],
+                       parameters['KBT']
+                      )
+                    )
+
     max_t = parameters['max_t']
     dt = parameters['dt']
     with open('data/{}.data'.format(sim_name), 'w', 1) as f:
         for t in tqdm(np.arange(0, max_t, dt)):
-            sys.stderr.write('\rt={:3.4f} (of {:3.4f})   '.format(t, max_t))
             for particle in particle_list:
                 particle.move(potential, dt, drift, noise)
             f.write('{} {}\n'.format(t,
