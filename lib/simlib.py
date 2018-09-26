@@ -19,11 +19,12 @@ def parse_parameters_file(sim_name):
                 'max_t': float(line_params[1]),
                 'dt': float(line_params[2]),
                 'E': float(line_params[3]),
-                'D': float(line_params[4]),
+                'g': float(line_params[4]),
                 'KBT': float(line_params[5]),
                 'x0': float(line_params[6]),
-                'D_KBT': float(line_params[4])/float(line_params[5]),
-                'S2D': np.sqrt(2*float(line_params[4]))
+                'g_': 1.0 / float(line_params[4]),
+                'S2D': np.sqrt(2 * float(line_params[5]) / float(line_params[4])),
+                'write_interval': int(line_params[7]),
             }
         else:
             m, s, A = [float(x) for x in line.split(' ')]
@@ -59,27 +60,33 @@ class particle:
     def __init__(self, parameters):
         self.parameters = parameters
         self.x = parameters['x0']
+        self.dx2 = 0
+        self.SD = []
 
     def move(self, u, dt, drift=True, noise=True):
-        v = 0.0
+        v = 0
         if drift:
-            v += u.get_force(self.x) * self.parameters['D_KBT']
+            v += u.get_force(self.x) * self.parameters['g_']
         if noise:
             v += self.parameters['S2D'] * np.random.normal(0.0, 1.0)
+
+        #self.x_old = self.x
         self.x += v
+        #self.dx2 += (self.x - self.x_old)**2
+        #self.SD.append(self.dx2)
 
 
 def run_simulation(sim_name, parameters, particle_list,
                    potential, drift=True, noise=True):
     sys.stderr.write('''
-running simulation {}, with following parameters:
+running simulation {}, with the following parameters:
 number of particles = {}, x0 = {},
 max_t = {}, dt = {},
-E = {}, D = {},
+E = {}, gamma = {},
 KBT = {}\n\n'''.format(sim_name,
                        parameters['num_particles'], parameters['x0'],
                        parameters['max_t'], parameters['dt'],
-                       parameters['E'], parameters['D'],
+                       parameters['E'], parameters['g'],
                        parameters['KBT']
                       )
                     )
@@ -90,7 +97,6 @@ KBT = {}\n\n'''.format(sim_name,
         for t in tqdm(np.arange(0, max_t, dt)):
             for particle in particle_list:
                 particle.move(potential, dt, drift, noise)
-            f.write('{} {}\n'.format(t,
-                                     np.average([particle.x for particle in particle_list]),
-                                     )
-                    )
+
+            if t % parameters['write_interval'] == 0:
+                f.write('{} {}\n'.format(t, np.average([particle.x for particle in particle_list])))

@@ -20,4 +20,6 @@ set term png size 1200,1200
 set output "graphs/NAMEX.png"
 set style fill solid 0.5
 set xrange[xmin:xmax]
+#set xrange[-10:10]
+set yrange[0:1.1]
 plot "data/NAMEX.data" using (bin($2,binwidth)):(1.0/m) smooth freq with boxes notitle
