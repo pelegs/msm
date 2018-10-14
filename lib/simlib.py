@@ -24,7 +24,6 @@ def parse_parameters_file(sim_name):
                 'x0': float(line_params[6]),
                 'g_': 1.0 / float(line_params[4]),
                 'S2D': np.sqrt(2 * float(line_params[5]) / float(line_params[4])),
-                'write_interval': int(line_params[7]),
             }
         else:
             m, s, A = [float(x) for x in line.split(' ')]
@@ -41,39 +40,56 @@ class gaussian:
     def get_value(self, x):
         return self.a * np.exp(-(x-self.m)**2.0 / (2.0 * self.s**2.0))
 
+    def get_derivative(self, x):
+        return -self.get_value(x) * (x-self.m)/self.s**2
 
 class potential:
     def __init__(self, parameters, gaussians):
         self.gaussians = gaussians
         self.parameters = parameters
 
+    def get_sum_gaussians(self, x):
+        return np.sum([gauss.get_value(x) for gauss in self.gaussians])
+
+    def get_sum_gaussians_derivatives(self, x):
+        return np.sum([gauss.get_derivative(x) for gauss in self.gaussians])
+
     def get_value(self, x):
-        return -np.log(np.sum([gauss.get_value(x) for gauss in self.gaussians]))
+        return -np.log(self.get_sum_gaussians(x))
+
+    def get_derivative(self, x):
+        numerator = self.get_sum_gaussians_derivatives(x)
+        denominator = self.get_sum_gaussians(x)
+        return -numerator / denominator
 
     def get_force(self, x):
-        val = np.sum([-g.get_value(x)*(x-g.m)/g.s**2.0 for g in self.gaussians])
-        norm = np.sum([g.get_value(x) for g in self.gaussians])
-        return val / norm * self.parameters['E']
+        return -self.parameters['E'] * self.get_derivative(x)
 
 
 class particle:
     def __init__(self, parameters):
         self.parameters = parameters
         self.x = parameters['x0']
-        self.dx2 = 0
-        self.SD = []
 
-    def move(self, u, dt, drift=True, noise=True):
-        v = 0
-        if drift:
-            v += u.get_force(self.x) * self.parameters['g_']
-        if noise:
-            v += self.parameters['S2D'] * np.random.normal(0.0, 1.0)
+        self.D = parameters['KBT'] / parameters['g']
+        self.dt = parameters['dt'] * 0.05
+        self.dist_sigma = np.sqrt(2*self.D*self.dt)
+        self.beta = 1.0 / parameters['KBT']
 
-        #self.x_old = self.x
-        self.x += v
-        #self.dx2 += (self.x - self.x_old)**2
-        #self.SD.append(self.dx2)
+    def move(self, u, dt, method='langevin', drift=True, noise=True):
+        if method == 'langevin':
+            vdt = 0
+            if drift:
+                vdt += u.get_force(self.x) * self.parameters['g_']
+            if noise:
+                vdt += self.parameters['S2D'] * np.random.normal(0.0, 1.0)
+            self.x += vdt
+        elif method == 'smoluchowski':
+            c = u.get_derivative(self.x)
+            m = self.x - self.D * self.beta * c * self.dt
+            self.x = np.random.normal(m, self.dist_sigma) * dt
+        else:
+            raise ValueError('Unknown method \'{}\''.format(method))
 
 
 def run_simulation(sim_name, parameters, particle_list,
@@ -96,7 +112,6 @@ KBT = {}\n\n'''.format(sim_name,
     with open('data/{}.data'.format(sim_name), 'w', 1) as f:
         for t in tqdm(np.arange(0, max_t, dt)):
             for particle in particle_list:
-                particle.move(potential, dt, drift, noise)
+                particle.move(potential, dt, method='langevin', drift=drift, noise=noise)
 
-            if t % parameters['write_interval'] == 0:
-                f.write('{} {}\n'.format(t, np.average([particle.x for particle in particle_list])))
+            f.write('{} {}\n'.format(t, np.average([particle.x for particle in particle_list])))
