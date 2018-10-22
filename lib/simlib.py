@@ -18,12 +18,14 @@ def parse_parameters_file(sim_name):
                 'num_particles': int(line_params[0]),
                 'max_t': float(line_params[1]),
                 'dt': float(line_params[2]),
-                'E': float(line_params[3]),
-                'g': float(line_params[4]),
-                'KBT': float(line_params[5]),
-                'x0': float(line_params[6]),
-                'g_': 1.0 / float(line_params[4]),
-                'S2D': np.sqrt(2 * float(line_params[5]) / float(line_params[4])),
+                'dstep': float(line_params[3]),
+                'E': float(line_params[4]),
+                'g': float(line_params[5]),
+                'KBT': float(line_params[6]),
+                'x0': float(line_params[7]),
+                'g_': 1.0 / float(line_params[5]),
+                'S2D': np.sqrt(2 * float(line_params[6]) / float(line_params[5])),
+                'method': line_params[9]
             }
         else:
             m, s, A = [float(x) for x in line.split(' ')]
@@ -87,7 +89,7 @@ class particle:
         elif method == 'smoluchowski':
             c = u.get_derivative(self.x)
             m = self.x - self.D * self.beta * c * self.dt
-            self.x = np.random.normal(m, self.dist_sigma) * dt
+            self.x = np.random.normal(m, self.dist_sigma)
         else:
             raise ValueError('Unknown method \'{}\''.format(method))
 
@@ -97,21 +99,27 @@ def run_simulation(sim_name, parameters, particle_list,
     sys.stderr.write('''
 running simulation {}, with the following parameters:
 number of particles = {}, x0 = {},
-max_t = {}, dt = {},
+max_t = {}, dt = {}, recording every {} steps,
 E = {}, gamma = {},
-KBT = {}\n\n'''.format(sim_name,
-                       parameters['num_particles'], parameters['x0'],
-                       parameters['max_t'], parameters['dt'],
-                       parameters['E'], parameters['g'],
-                       parameters['KBT']
+KBT = {}
+method: {}\n\n'''.format(sim_name,
+                         parameters['num_particles'], parameters['x0'],
+                         parameters['max_t'], parameters['dt'], parameters['dstep'],
+                         parameters['E'], parameters['g'],
+                         parameters['KBT'],
+                         parameters['method']
+                        )
                       )
-                    )
 
     max_t = parameters['max_t']
     dt = parameters['dt']
+    dstep = parameters['dstep']
     with open('data/{}.data'.format(sim_name), 'w', 1) as f:
+        step = 0
         for t in tqdm(np.arange(0, max_t, dt)):
             for particle in particle_list:
-                particle.move(potential, dt, method='langevin', drift=drift, noise=noise)
-
-            f.write('{} {}\n'.format(t, np.average([particle.x for particle in particle_list])))
+                particle.move(potential, dt, method=parameters['method'], drift=drift, noise=noise)
+            if step == dstep:
+                f.write('{} {}\n'.format(t, np.average([particle.x for particle in particle_list])))
+                step = 0
+            step += 1
