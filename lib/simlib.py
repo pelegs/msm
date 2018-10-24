@@ -74,7 +74,7 @@ class particle:
         self.x = parameters['x0']
 
         self.D = parameters['KBT'] / parameters['g']
-        self.dt = parameters['dt'] * 0.05
+        self.dt = parameters['dt']
         self.dist_sigma = np.sqrt(2*self.D*self.dt)
         self.beta = 1.0 / parameters['KBT']
 
@@ -120,6 +120,11 @@ method: {}\n\n'''.format(sim_name,
             for particle in particle_list:
                 particle.move(potential, dt, method=parameters['method'], drift=drift, noise=noise)
             if step == dstep:
-                f.write('{} {}\n'.format(t, np.average([particle.x for particle in particle_list])))
+                avg_x = np.average([particle.x for particle in particle_list])
+                f.write('{} {} {}\n'.format(t,
+                                            avg_x,
+                                            potential.get_sum_gaussians(avg_x)
+                                            )
+                       )
                 step = 0
             step += 1

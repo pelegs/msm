@@ -21,4 +21,5 @@ set output "graphs/double_well_smol.png"
 set style fill solid 0.5
 set xrange[xmin:xmax]
 set yrange[0:1.1]
-plot "data/double_well_smol.data" using (bin($2,binwidth)):(1.0/m) smooth freq with boxes notitle
+plot "data/double_well_smol.data" using (bin($2,binwidth)):(1.0/m) smooth freq with boxes notitle,\
+     "data/double_well_smol.data" using 2:3 lw 2 lc rgb "#FF0000" title "Expected P"
