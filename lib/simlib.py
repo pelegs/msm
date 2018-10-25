@@ -10,10 +10,10 @@ from tqdm import tqdm
 def parse_parameters_file(sim_name):
     with open('simulation/{}.g'.format(sim_name), 'r') as f:
         lines = [line.rstrip('\n') for line in f]
-    gaussians = []
+    components = []
     for i, line in enumerate(lines):
         if i == 0:
-            line_params =line.split(' ')
+            line_params = line.split(' ')
             parameters = {
                 'num_particles': int(line_params[0]),
                 'max_t': float(line_params[1]),
@@ -27,10 +27,15 @@ def parse_parameters_file(sim_name):
                 'S2D': np.sqrt(2 * float(line_params[6]) / float(line_params[5])),
                 'method': line_params[9]
             }
+        elif i == 1:
+            parameters['potential_type'] = line
         else:
-            m, s, A = [float(x) for x in line.split(' ')]
-            gaussians.append(gaussian(m, s, A))
-    return parameters, gaussians
+            if parameters['potential_type'] == 'gaussian':
+                m, s, A = [float(x) for x in line.split(' ')]
+                components.append(gaussian(m, s, A))
+            elif parameters['potential_type'] == 'harmonic':
+                components.append(float(line))
+    return parameters, components
 
 
 class gaussian:
@@ -45,7 +50,7 @@ class gaussian:
     def get_derivative(self, x):
         return -self.get_value(x) * (x-self.m)/self.s**2
 
-class potential:
+class gaussian_potential:
     def __init__(self, parameters, gaussians):
         self.gaussians = gaussians
         self.parameters = parameters
@@ -67,6 +72,22 @@ class potential:
     def get_force(self, x):
         return -self.parameters['E'] * self.get_derivative(x)
 
+    def get_expected_probability(self, x):
+        return self.get_sum_gaussians(x)
+
+
+class harmonic_potential:
+    def __init__(self, k=1):
+        self.k = k[0]
+
+    def get_value(self, x):
+        return self.k * x**2
+
+    def get_derivative(self, x):
+        return 2 * self.k * x
+
+    def get_expected_probability(self, x):
+        return np.exp(-self.k * x**2 / 2)
 
 class particle:
     def __init__(self, parameters):
@@ -123,7 +144,7 @@ method: {}\n\n'''.format(sim_name,
                 avg_x = np.average([particle.x for particle in particle_list])
                 f.write('{} {} {}\n'.format(t,
                                             avg_x,
-                                            potential.get_sum_gaussians(avg_x)
+                                            potential.get_expected_probability(avg_x)
                                             )
                        )
                 step = 0

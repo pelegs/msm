@@ -10,8 +10,11 @@ from simlib import *
 sim_name = sys.argv[1]
 
 # Parameters
-parameters, gaussians = parse_parameters_file(sim_name)
-u = potential(parameters, gaussians)
+parameters, components = parse_parameters_file(sim_name)
+if parameters['potential_type'] == 'gaussian':
+    u = gaussian_potential(parameters, components)
+elif parameters['potential_type'] == 'harmonic':
+    u = harmonic_potential(components)
 
 # Particles
 particles = [particle(parameters) for _ in range(parameters['num_particles'])]
