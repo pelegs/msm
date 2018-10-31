@@ -14,15 +14,16 @@ parameters, components = parse_parameters_file(sim_name)
 if parameters['potential_type'] == 'gaussian':
     u = gaussian_potential(parameters, components)
 elif parameters['potential_type'] == 'harmonic':
-    u = harmonic_potential(components)
+    u = harmonic_potential(parameters, components)
 
 # Particles
 particles = [particle(parameters) for _ in range(parameters['num_particles'])]
 
 # Simulation
+print(parameters['drift'], parameters['noise'])
 run_simulation(sim_name=sim_name,
                parameters=parameters,
                particle_list=particles,
                potential=u,
-               drift=True,
-               noise=True)
+               drift=parameters['drift'],
+               noise=parameters['noise'])
