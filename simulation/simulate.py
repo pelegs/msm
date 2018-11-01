@@ -20,7 +20,6 @@ elif parameters['potential_type'] == 'harmonic':
 particles = [particle(parameters) for _ in range(parameters['num_particles'])]
 
 # Simulation
-print(parameters['drift'], parameters['noise'])
 run_simulation(sim_name=sim_name,
                parameters=parameters,
                particle_list=particles,

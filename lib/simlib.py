@@ -54,6 +54,9 @@ class gaussian:
     def get_derivative(self, x):
         return -self.get_value(x) * (x-self.m)/self.s**2
 
+    def get_analytical_form(self):
+        return 'sqrt(1/(2*pi*{}**2)) * exp(-(x-{})**2/(2*{}**2))'.format(self.s, self.m, self.s)
+
 class gaussian_potential:
     def __init__(self, parameters, gaussians):
         self.gaussians = gaussians
@@ -77,8 +80,12 @@ class gaussian_potential:
         return -self.parameters['E'] * self.get_derivative(x)
 
     def get_expected_probability(self, x):
-        return self.get_sum_gaussians(x)
+        return 1/len(self.gaussians) * self.get_sum_gaussians(x)
 
+    def get_expected_probability_analytic(self):
+        n = len(self.gaussians)
+        gs = '+'.join([g.get_analytical_form() for g in self.gaussians])
+        return '{} * ({})'.format(1/n, gs)
 
 class harmonic_potential:
     def __init__(self, parameters, k=1):
@@ -86,16 +93,21 @@ class harmonic_potential:
         self.k = k[0]
 
     def get_value(self, x):
-        return self.k * x**2
+        return 0.5 * self.k * x**2
 
     def get_derivative(self, x):
-        return 2 * self.k * x
+        return self.k * x
 
     def get_expected_probability(self, x):
-        return np.exp(-self.k * x**2 / (self.parameters['D']))
+        return np.exp(-self.k * x**2 / (2*self.parameters['D'])) * np.sqrt(self.k/(2*np.pi*self.parameters['D']))
+
+    def get_expected_probability_analytic(self):
+        k = self.k
+        D = self.parameters['D']
+        return 'sqrt({}/(2*pi*{})) * exp(-{}*x**2/(2*{}))'.format(k, D, k, D)
 
     def get_force(self, x):
-        return -1 * self.get_derivative(x)
+        return -self.get_derivative(x)
 
 class particle:
     def __init__(self, parameters):
@@ -118,7 +130,7 @@ class particle:
             if noise:
                 vdt += self.parameters['S2D'] * np.random.normal(0.0, 1.0)
             self.x += vdt
-        elif method == 'smoluchowski':
+        elif method in ['smoluchowski', 'smol']:
             c = u.get_derivative(self.x)
             m = self.x - self.D * self.beta * c * self.dt
             self.x = np.random.normal(m, self.dist_sigma)
@@ -151,6 +163,7 @@ def run_simulation(sim_name, parameters, particle_list,
     max_t = parameters['max_t']
     dt = parameters['dt']
     dstep = parameters['dstep']
+    avg_x = []
     with open('data/{}.data'.format(sim_name), 'w', 1) as f:
         f.write(info)
         step = 0
@@ -158,13 +171,32 @@ def run_simulation(sim_name, parameters, particle_list,
             for particle in particle_list:
                 particle.move(potential, dt, method=parameters['method'], drift=drift, noise=noise)
             if step == dstep:
-                avg_x = np.average([particle.x for particle in particle_list])
+                avg_x.append(np.average([particle.x for particle in particle_list]))
                 avg_msd = np.average([particle.msd for particle in particle_list])
                 f.write('{} {} {} {}\n'.format(t,
-                                               avg_x,
-                                               potential.get_expected_probability(avg_x),
+                                               avg_x[-1],
+                                               potential.get_expected_probability(avg_x[-1]),
                                                avg_msd,
                                                )
                        )
                 step = 0
             step += 1
+
+    p_exp = potential.get_expected_probability_analytic()
+    with open('data/{}_expected_probability.data'.format(sim_name), 'w') as f:
+        f.write('p_exp(x) = {}\n'.format(p_exp))
+
+    n_bins = int(1000 * np.sqrt(2 * parameters['D'] * parameters['dt']))
+    hist, bin_edges = np.histogram(avg_x, bins=n_bins, density=True)
+    half_bin_width = (np.max(avg_x) - np.min(avg_x)) / (2 * n_bins)
+    bin_centers = bin_edges - half_bin_width
+    D_KL = []
+    with open('data/{}_histogram.data'.format(sim_name), 'w', 1) as f:
+        for x, y in zip(hist, bin_centers):
+            p_exp = potential.get_expected_probability(y)
+            KL = 0
+            if x != 0:
+                KL = p_exp * np.log(x/p_exp)
+            D_KL.append(KL)
+            f.write('{} {} {} {}\n'.format(y, x, p_exp, D_KL[-1]))
+    print('D_KL =', np.sum(D_KL))
