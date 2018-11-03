@@ -1,45 +1,6 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import sys
-
-# For progress bar
-from tqdm import tqdm
-
-
-def parse_parameters_file(sim_name):
-    with open('simulation/{}.g'.format(sim_name), 'r') as f:
-        lines = [line.rstrip('\n') for line in f]
-    components = []
-    for i, line in enumerate(lines):
-        if i == 0:
-            line_params = line.split(' ')
-            parameters = {
-                'num_particles': int(line_params[0]),
-                'max_t': float(line_params[1]),
-                'dt': float(line_params[2]),
-                'dstep': float(line_params[3]),
-                'E': float(line_params[4]),
-                'g': float(line_params[5]),
-                'KBT': float(line_params[6]),
-                'x0': float(line_params[7]),
-                'method': line_params[9]
-            }
-            parameters['D'] = parameters['KBT'] / parameters['g']
-            parameters['g_']  = 1.0 / parameters['g']
-            parameters['S2D'] = np.sqrt(2 * parameters['D'] * parameters['dt'])
-        elif i == 1:
-            line_params = line.split(' ')
-            parameters['potential_type'] = line_params[0]
-            parameters['drift'] = bool(int(line_params[1]))
-            parameters['noise'] = bool(int(line_params[2]))
-        else:
-            if parameters['potential_type'] == 'gaussian':
-                m, s, A = [float(x) for x in line.split(' ')]
-                components.append(gaussian(m, s, A))
-            elif parameters['potential_type'] == 'harmonic':
-                components.append(float(line))
-    return parameters, components
 
 
 class gaussian:
@@ -54,13 +15,22 @@ class gaussian:
     def get_derivative(self, x):
         return -self.get_value(x) * (x-self.m)/self.s**2
 
-    def get_analytical_form(self):
-        return 'sqrt(1/(2*pi*{}**2)) * exp(-(x-{})**2/(2*{}**2))'.format(self.s, self.m, self.s)
 
-class gaussian_potential:
-    def __init__(self, parameters, gaussians):
+class potential:
+    def __init__(self, type):
+        self.type = type
+
+    def get_force(self, x):
+        return -self.get_derivative(x)
+
+    def get_expected_probability(self, x, KT=1.0):
+        return np.exp(-self.get_value(x)/KT)
+
+
+class gaussian_potential(potential):
+    def __init__(self, gaussians):
+        potential.__init__(self, type='gaussian')
         self.gaussians = gaussians
-        self.parameters = parameters
 
     def get_sum_gaussians(self, x):
         return np.sum([gauss.get_value(x) for gauss in self.gaussians])
@@ -76,127 +46,47 @@ class gaussian_potential:
         denominator = self.get_sum_gaussians(x)
         return -numerator / denominator
 
-    def get_force(self, x):
-        return -self.parameters['E'] * self.get_derivative(x)
 
-    def get_expected_probability(self, x):
-        return 1/len(self.gaussians) * self.get_sum_gaussians(x)
-
-    def get_expected_probability_analytic(self):
-        n = len(self.gaussians)
-        gs = '+'.join([g.get_analytical_form() for g in self.gaussians])
-        return '{} * ({})'.format(1/n, gs)
-
-class harmonic_potential:
-    def __init__(self, parameters, k=1):
-        self.parameters = parameters
-        self.k = k[0]
+class harmonic_potential(potential):
+    def __init__(self, m=0, k=1):
+        potential.__init__(self, type='harmonic')
+        self.m = m
+        self.k = k
 
     def get_value(self, x):
-        return 0.5 * self.k * x**2
+        return 0.5 * self.k * (x-self.m)**2
 
     def get_derivative(self, x):
-        return self.k * x
+        return self.k * (x-self.m)
 
-    def get_expected_probability(self, x):
-        return np.exp(-self.k * x**2 / (2*self.parameters['D'])) * np.sqrt(self.k/(2*np.pi*self.parameters['D']))
 
-    def get_expected_probability_analytic(self):
-        k = self.k
-        D = self.parameters['D']
-        return 'sqrt({}/(2*pi*{})) * exp(-{}*x**2/(2*{}))'.format(k, D, k, D)
+def simulate(name, potential, method = 'langevin',
+             max_t = 1000, dt = 0.1, #num_particles = 1,
+             dstep = 1.0, D = 1.0, KT=1.0, x0 = 0.0,
+             drift = True, noise = True):
+    """
+    Actuall simulation.
+    More details to come.
+    """
 
-    def get_force(self, x):
-        return -self.get_derivative(x)
+    A = D / KT * dt
+    B = np.sqrt(2*D*dt)
 
-class particle:
-    def __init__(self, parameters):
-        self.parameters = parameters
-        self.x = parameters['x0']
-        self.msd = 0.0
+    ts = np.arange(0, max_t+dt, dt)
+    xs = [x0]
 
-        self.D = parameters['D']
-        self.dt = parameters['dt']
-        self.dist_sigma = np.sqrt(2*self.D*self.dt)
-        self.beta = 1.0 / parameters['KBT']
-
-    def move(self, u, dt, method='langevin', drift=True, noise=True):
-        x_prev = self.x
-
+    for t in ts:
         if method == 'langevin':
             vdt = 0.0
             if drift:
-                vdt += u.get_force(self.x) * self.parameters['g_'] * self.parameters['dt']
+                vdt += A * potential.get_force(xs[-1])
             if noise:
-                vdt += self.parameters['S2D'] * np.random.normal(0.0, 1.0)
-            self.x += vdt
-        elif method in ['smoluchowski', 'smol']:
-            c = u.get_derivative(self.x)
-            m = self.x - self.D * self.beta * c * self.dt
-            self.x = np.random.normal(m, self.dist_sigma)
+                vdt += B * np.random.normal()
+            xs.append(xs[-1] + vdt)
         else:
             raise ValueError('Unknown method \'{}\''.format(method))
 
-        self.msd += (self.x - x_prev)**2
+    bins = int((np.max(xs) - np.min(xs)) / (0.1*B))
+    hist, bin_edges = np.histogram(xs, bins=bins, density=True)
 
-
-def run_simulation(sim_name, parameters, particle_list,
-                   potential, drift=True, noise=True):
-    drift_text, noise_text = 'with', 'with'
-    if not drift:
-        drift_text += 'out'
-    if not noise:
-        noise_text += 'out'
-    info = '''
-# Simulation: {}, with the following parameters:
-# Number of particles = {}, x0 = {},
-# max_t = {}, dt = {}, recording every {} steps,
-# E = {}, gamma = {}, KBT = {} ==> D = {},
-# Method: {}, {} drift, {} noise\n\n'''.format(
-                         sim_name,
-                         parameters['num_particles'], parameters['x0'],
-                         parameters['max_t'], parameters['dt'], parameters['dstep'],
-                         parameters['E'], parameters['g'], parameters['KBT'], parameters['D'],
-                         parameters['method'], drift_text, noise_text
-                        )
-    sys.stderr.write(info)
-    max_t = parameters['max_t']
-    dt = parameters['dt']
-    dstep = parameters['dstep']
-    avg_x = []
-    with open('data/{}.data'.format(sim_name), 'w', 1) as f:
-        f.write(info)
-        step = 0
-        for t in tqdm(np.arange(0, max_t, dt)):
-            for particle in particle_list:
-                particle.move(potential, dt, method=parameters['method'], drift=drift, noise=noise)
-            if step == dstep:
-                avg_x.append(np.average([particle.x for particle in particle_list]))
-                avg_msd = np.average([particle.msd for particle in particle_list])
-                f.write('{} {} {} {}\n'.format(t,
-                                               avg_x[-1],
-                                               potential.get_expected_probability(avg_x[-1]),
-                                               avg_msd,
-                                               )
-                       )
-                step = 0
-            step += 1
-
-    p_exp = potential.get_expected_probability_analytic()
-    with open('data/{}_expected_probability.data'.format(sim_name), 'w') as f:
-        f.write('p_exp(x) = {}\n'.format(p_exp))
-
-    n_bins = int(1000 * np.sqrt(2 * parameters['D'] * parameters['dt']))
-    hist, bin_edges = np.histogram(avg_x, bins=n_bins, density=True)
-    half_bin_width = (np.max(avg_x) - np.min(avg_x)) / (2 * n_bins)
-    bin_centers = bin_edges - half_bin_width
-    D_KL = []
-    with open('data/{}_histogram.data'.format(sim_name), 'w', 1) as f:
-        for x, y in zip(hist, bin_centers):
-            p_exp = potential.get_expected_probability(y)
-            KL = 0
-            if x != 0:
-                KL = p_exp * np.log(x/p_exp)
-            D_KL.append(KL)
-            f.write('{} {} {} {}\n'.format(y, x, p_exp, D_KL[-1]))
-    print('D_KL =', np.sum(D_KL))
+    return ts, np.array(xs), hist, bin_edges

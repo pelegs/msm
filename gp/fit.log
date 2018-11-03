@@ -11212,3 +11212,39 @@ correlation matrix of the fit parameters:
                 a      b      
 a               1.000 
 b              -0.870  1.000 
+
+
+*******************************************************************************
+Fri Nov  2 18:15:23 2018
+
+
+FIT:    data read from "slopes.data" u 1:2
+        format = x:z
+        #datapoints = 50
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x) = a*x + b
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b            
+   0 5.0104511617e+01   0.00e+00  4.20e+00    1.000000e+00   1.000000e+00
+   4 1.9349179313e-03  -1.02e-03  4.20e-04    9.995557e-01   1.241632e-03
+
+After 4 iterations the fit converged.
+final sum of squares of residuals : 0.00193492
+rel. change during last iteration : -1.02222e-08
+
+degrees of freedom    (FIT_NDF)                        : 48
+rms of residuals      (FIT_STDFIT) = sqrt(WSSR/ndf)    : 0.00634908
+variance of residuals (reduced chisquare) = WSSR/ndf   : 4.03108e-05
+
+Final set of parameters            Asymptotic Standard Error
+=======================            ==========================
+a               = 0.999556         +/- 0.0003111    (0.03112%)
+b               = 0.00124163       +/- 0.001823     (146.8%)
+
+correlation matrix of the fit parameters:
+                a      b      
+a               1.000 
+b              -0.870  1.000 
