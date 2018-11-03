@@ -7,10 +7,10 @@ class gaussian:
     def __init__(self, center=0.0, stdev=1.0, amplitude=1.0):
         self.m = center
         self.s = stdev
-        self.a = amplitude
+        #self.a = amplitude
 
     def get_value(self, x):
-        return self.a * np.exp(-(x-self.m)**2.0 / (2.0 * self.s**2.0))
+        return 1/(self.s*np.sqrt(2*np.pi)) * np.exp(-(x-self.m)**2.0 / (2.0 * self.s**2.0))
 
     def get_derivative(self, x):
         return -self.get_value(x) * (x-self.m)/self.s**2
@@ -69,24 +69,30 @@ def simulate(name, potential, method = 'langevin',
     More details to come.
     """
 
-    A = D / KT * dt
-    B = np.sqrt(2*D*dt)
+    C1 = D / KT * dt
+    C2 = np.sqrt(2*D*dt)
+    beta = 1/KT
+    C3 = D * beta * dt
 
-    ts = np.arange(0, max_t+dt, dt)
+    ts = np.arange(0, max_t, dt)
     xs = [x0]
 
     for t in ts:
-        if method == 'langevin':
+        if method in ['lang', 'langevin']:
             vdt = 0.0
             if drift:
-                vdt += A * potential.get_force(xs[-1])
+                vdt += C1 * potential.get_force(xs[-1])
             if noise:
-                vdt += B * np.random.normal()
+                vdt += C2 * np.random.normal()
             xs.append(xs[-1] + vdt)
+        elif method in ['smol', 'smlouchowski']:
+            c = potential.get_derivative(xs[-1])
+            mu = xs[-1] - C3*c
+            xs.append(np.random.normal(mu, C2))
         else:
             raise ValueError('Unknown method \'{}\''.format(method))
 
-    bins = int((np.max(xs) - np.min(xs)) / (0.1*B))
+    bins = int((np.max(xs) - np.min(xs)) / (0.1*C2))
     hist, bin_edges = np.histogram(xs, bins=bins, density=True)
 
-    return ts, np.array(xs), hist, bin_edges
+    return ts, np.array(xs)[:-1], hist, bin_edges
