@@ -27,6 +27,17 @@ class potential:
         return np.exp(-self.get_value(x)/KT)
 
 
+class zero_potential(potential):
+    def __init__(self):
+        potential.__init__(self, type='zero')
+
+    def get_value(self, x):
+        return 0.0
+
+    def get_derivative(self, x):
+        return 0.0
+
+
 class gaussian_potential(potential):
     def __init__(self, gaussians):
         potential.__init__(self, type='gaussian')
@@ -60,10 +71,11 @@ class harmonic_potential(potential):
         return self.k * (x-self.m)
 
 
-def simulate(name, potential, method = 'langevin',
-             max_t = 1000, dt = 0.1, #num_particles = 1,
+def simulate(name=None, potential=zero_potential(), method = 'langevin',
+             max_t = 1000, dt = 0.1,
+             num_particles = 1, num_bins = 20,
              dstep = 1.0, D = 1.0, KT=1.0, x0 = 0.0,
-             drift = True, noise = True):
+             drift = False, noise = True):
     """
     Actuall simulation.
     More details to come.
@@ -75,24 +87,33 @@ def simulate(name, potential, method = 'langevin',
     C3 = D * beta * dt
 
     ts = np.arange(0, max_t, dt)
-    xs = [x0]
+    xs = np.ones(shape=(len(ts), num_particles)) * x0
 
-    for t in ts:
-        if method in ['lang', 'langevin']:
-            vdt = 0.0
-            if drift:
-                vdt += C1 * potential.get_force(xs[-1])
-            if noise:
-                vdt += C2 * np.random.normal()
-            xs.append(xs[-1] + vdt)
-        elif method in ['smol', 'smlouchowski']:
-            c = potential.get_derivative(xs[-1])
-            mu = xs[-1] - C3*c
-            xs.append(np.random.normal(mu, C2))
-        else:
-            raise ValueError('Unknown method \'{}\''.format(method))
+    for i, t in enumerate(xs[:-1]):
+        for j, x in enumerate(t):
+            if method in ['lang', 'langevin']:
+                vdt = 0.0
+                if drift:
+                    vdt += C1 * potential.get_force(x)
+                if noise:
+                    vdt += C2 * np.random.normal()
+                xs[i+1][j] = x + vdt
+            elif method in ['smol', 'smlouchowski']:
+                c = potential.get_derivative(x)
+                mu = x - C3*c
+                xs[i+1][j] = np.random.normal(mu, C2)
+            else:
+                raise ValueError('Unknown method \'{}\''.format(method))
 
-    bins = int((np.max(xs) - np.min(xs)) / (0.1*C2))
-    hist, bin_edges = np.histogram(xs, bins=bins, density=True)
+    hist = []
+    bin_edges = []
+    for i, positions in enumerate(xs[1:-1]):
+        h, b = np.histogram(positions, bins=num_bins, density=True)
+        hist.append(h)
+        bin_edges.append(b)
 
-    return ts, np.array(xs)[:-1], hist, bin_edges
+    return ts, xs, np.array(hist), np.array(bin_edges)
+
+def MSD(xs):
+    return [np.mean([(xs[t+1,i] - xs[0,i])**2 for i,_ in enumerate(xs[t,:])])
+                                              for t,_ in enumerate(xs[:-1,0])]
