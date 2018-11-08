@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy as np
-
+from tqdm import tqdm
 
 class gaussian:
     def __init__(self, center=0.0, stdev=1.0, amplitude=1.0):
@@ -89,7 +89,7 @@ def simulate(potential, method = 'langevin',
     ts = np.arange(0, max_t, dt)
     xs = np.ones(shape=(len(ts), num_particles)) * x0
 
-    for i, t in enumerate(xs[:-1]):
+    for i, t in enumerate(tqdm(xs[:-1])):
         for j, x in enumerate(t):
             if method in ['lang', 'langevin']:
                 vdt = 0.0
@@ -105,14 +105,7 @@ def simulate(potential, method = 'langevin',
             else:
                 raise ValueError('Unknown method \'{}\''.format(method))
 
-    hist = []
-    bin_edges = []
-    for i, positions in enumerate(xs[1:-1]):
-        h, b = np.histogram(positions, bins=num_bins, density=True)
-        hist.append(h)
-        bin_edges.append(b)
-
-    return ts, xs, np.array(hist), np.array(bin_edges)
+    return ts, xs
 
 def MSD(xs):
     return [np.mean([(xs[t+1,i] - xs[0,i])**2 for i,_ in enumerate(xs[t,:])])
