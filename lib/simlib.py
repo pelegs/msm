@@ -71,11 +71,11 @@ class harmonic_potential(potential):
         return self.k * (x-self.m)
 
 
-def simulate(name=None, potential=zero_potential(), method = 'langevin',
+def simulate(potential, method = 'langevin',
              max_t = 1000, dt = 0.1,
              num_particles = 1, num_bins = 20,
              dstep = 1.0, D = 1.0, KT=1.0, x0 = 0.0,
-             drift = False, noise = True):
+             drift = True, noise = True):
     """
     Actuall simulation.
     More details to come.
