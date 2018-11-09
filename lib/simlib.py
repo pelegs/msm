@@ -105,6 +105,10 @@ def simulate(potential, method = 'langevin',
             else:
                 raise ValueError('Unknown method \'{}\''.format(method))
 
+    #for arr in [ts, xs]:
+    #    if len(arr) == 1:
+    #        arr = arr.flatten()
+
     return ts, xs
 
 def MSD(xs):
