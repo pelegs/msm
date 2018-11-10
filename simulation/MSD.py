@@ -29,6 +29,6 @@ for i, D in enumerate(Ds):
     ms.append(m[0])
     covs.append(np.sqrt(np.diag(cov))[0])
 
-with open('../data/MSD.data'.format(method), 'w') as f:
+with open('../data/MSD_{}.data'.format(method), 'w') as f:
     for D, m, err in zip(Ds, ms, covs):
         f.write('{} {} {}\n'.format(2*D, m, err))
