@@ -89,7 +89,7 @@ def simulate(potential, method = 'langevin',
     ts = np.arange(0, max_t, dt)
     xs = np.ones(shape=(len(ts), num_particles)) * x0
 
-    for i, t in enumerate(tqdm(xs[:-1])):
+    for i, t in enumerate(xs[:-1]):
         for j, x in enumerate(t):
             if method in ['lang', 'langevin']:
                 vdt = 0.0

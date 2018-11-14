@@ -18,7 +18,7 @@ for k in tqdm(ks):
     for b in tqdm(bs):
         sqrtbks.append(1/np.sqrt(b*k))
         U = harmonic_potential(k=k)
-        ts, xs = simulate(U, method=method, num_particles=1, max_t=100000, x0=2, D=0.5, KT=1/b)
+        ts, xs = simulate(U, method=method, num_particles=1000, max_t=10000, x0=2, D=1, KT=1/b)
         times.append(ts)
         positions.append(xs)
 

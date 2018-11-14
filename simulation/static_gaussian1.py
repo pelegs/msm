@@ -10,13 +10,6 @@ from simlib import *
 
 method = sys.argv[1]
 
-def gauss(x, m, s):
-    return 1/np.sqrt(2*np.pi*s**2) * np.exp(-(x-m)**2/(2*s**2))
-
-def expected_p(x):
-    return 0.5 * (gauss(x, -3, 1) + gauss(x, 3, 1))
-
-
 g1 = gaussian(-3)
 g2 = gaussian(+3)
 U = gaussian_potential([g1, g2])
