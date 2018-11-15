@@ -74,40 +74,38 @@ class harmonic_potential(potential):
 def simulate(potential, method = 'langevin',
              max_t = 1000, dt = 0.1,
              num_particles = 1, num_bins = 20,
-             dstep = 1.0, D = 1.0, KT=1.0, x0 = 0.0,
+             dstep = 1.0, D = 1.0, beta=1.0, x0 = 0.0,
              drift = True, noise = True):
     """
     Actuall simulation.
     More details to come.
     """
 
-    C1 = D / KT * dt
+    C1 = D * beta * dt
     C2 = np.sqrt(2*D*dt)
-    beta = 1/KT
-    C3 = D * beta * dt
+
+    gamma = 1 / (beta*D)
+    a = (2-gamma*dt) / (2+gamma*dt)
+    b = np.sqrt((gamma*dt)/(2*beta))
+    c = 2*dt / (2 + gamma*dt)
 
     ts = np.arange(0, max_t, dt)
     xs = np.ones(shape=(len(ts), num_particles)) * x0
+    vs = np.zeros(len(ts))
 
-    for i, t in enumerate(xs[:-1]):
+    for i, t in enumerate(tqdm(xs[:-1])):
         for j, x in enumerate(t):
             if method in ['lang', 'langevin']:
-                vdt = 0.0
-                if drift:
-                    vdt += C1 * potential.get_force(x)
-                if noise:
-                    vdt += C2 * np.random.normal()
-                xs[i+1][j] = x + vdt
+                R = b*np.random.normal()
+                v_half = vs[i] + dt/2*potential.get_value(xs[i][j]) + R
+                xs[i+1][j] = xs[i][j] + c*v_half
+                vs[i+1] = v_half + R + dt/2*potential.get_value(xs[i+1][j])
             elif method in ['smol', 'smlouchowski']:
                 c = potential.get_derivative(x)
-                mu = x - C3*c
+                mu = x - C1*c
                 xs[i+1][j] = np.random.normal(mu, C2)
             else:
                 raise ValueError('Unknown method \'{}\''.format(method))
-
-    #for arr in [ts, xs]:
-    #    if len(arr) == 1:
-    #        arr = arr.flatten()
 
     return ts, xs
 

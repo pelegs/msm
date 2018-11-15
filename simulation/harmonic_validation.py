@@ -21,8 +21,8 @@ method = sys.argv[1]
 
 num_particles = 200
 
-max_t = 10
-dt = 0.01
+max_t = 50
+dt = 0.1
 ts = np.arange(0, max_t, dt)
 
 num_repetitions = 50
@@ -30,12 +30,13 @@ num_steps = int(max_t/dt)
 xs = np.zeros(shape=(num_repetitions, num_steps, num_particles))
 
 D, k, beta = 1.04, 0.87, 2.43
-Ds = [0.5, 1.0, 1.5]
-ks = [0.2, 0.5, 1.0, 1.5, 2.0]
-betas = [0.1, 0.5, 1.0]
+Ds = [1.0, 1.5]
+ks = [0.75, 1.0, 1.5]
+betas = [0.5, 1.0]
+x0s = [-3, -1, 1, 2]
 
-params = [(D, k, beta, np.random.randint(-50, 50)/10)
-           for D in Ds for k in ks for beta in betas]
+params = [(D, k, beta, x0)
+           for D in Ds for k in ks for beta in betas for x0 in x0s]
 
 bins = np.arange(-5, 5, 0.1)
 num_bins = len(bins)-1

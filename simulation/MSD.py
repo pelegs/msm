@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 
 import numpy as np
+from scipy import stats
 import sys
+
 sys.path.append('../lib')
 from simlib import *
+
 
 def MSD(xs):
     return np.array([np.mean(np.array([[(xs[t,i]-xs[0,i])**2 for t, _ in enumerate(xs)]
                                                     for i, _ in enumerate(xs[0,:])])[:,j])
             for j, _ in enumerate(xs)])
+
 
 method = sys.argv[1]
 num_particles = 10000
