@@ -19,21 +19,20 @@ def integral(x1, x2, m, v):
 
 method = sys.argv[1]
 
-num_particles = 200
+num_particles = 2000
 
-max_t = 50
+max_t = 15
 dt = 0.1
 ts = np.arange(0, max_t, dt)
 
-num_repetitions = 50
+num_repetitions = 15
 num_steps = int(max_t/dt)
 xs = np.zeros(shape=(num_repetitions, num_steps, num_particles))
 
-D, k, beta = 1.04, 0.87, 2.43
-Ds = [1.0, 1.5]
+Ds = [0.5, 1.0, 1.5]
 ks = [0.75, 1.0, 1.5]
-betas = [0.5, 1.0]
-x0s = [-3, -1, 1, 2]
+betas = [0.75, 1.0, 1.5]
+x0s = [-3, 2]
 
 params = [(D, k, beta, x0)
            for D in Ds for k in ks for beta in betas for x0 in x0s]
@@ -44,7 +43,7 @@ num_bins = len(bins)-1
 for D, k, beta, x0 in tqdm(params):
     U = harmonic_potential(k=k)
     for i in range(num_repetitions):
-        ts, xs[i] = simulate(U, method=method, num_particles=num_particles, max_t=max_t, dt=dt, KT=1/beta, x0=x0, D=D)
+        ts, xs[i] = simulate(U, method=method, num_particles=num_particles, max_t=max_t, dt=dt, beta=beta, x0=x0, D=D)
 
     m = x0 * np.exp(-D*beta*k*ts)
     v = 1/(beta*k)*(1-np.exp(-2*D*beta*k*ts))
