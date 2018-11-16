@@ -19,13 +19,13 @@ def integral(x1, x2, m, v):
 
 method = sys.argv[1]
 
-num_particles = 2000
+num_particles = 500
 
 max_t = 15
 dt = 0.1
 ts = np.arange(0, max_t, dt)
 
-num_repetitions = 15
+num_repetitions = 100
 num_steps = int(max_t/dt)
 xs = np.zeros(shape=(num_repetitions, num_steps, num_particles))
 
