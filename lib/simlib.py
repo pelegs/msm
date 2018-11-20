@@ -4,13 +4,14 @@ import numpy as np
 from tqdm import tqdm
 
 class gaussian:
-    def __init__(self, center=0.0, stdev=1.0, amplitude=1.0):
+    def __init__(self, center=0.0, stdev=1.0):
         self.m = center
         self.s = stdev
         #self.a = amplitude
 
     def get_value(self, x):
-        return 1/(self.s*np.sqrt(2*np.pi)) * np.exp(-(x-self.m)**2.0 / (2.0 * self.s**2.0))
+        #return 1/(self.s*np.sqrt(2*np.pi)) * np.exp(-(x-self.m)**2.0 / (2.0 * self.s**2.0))
+        return np.exp(-(x-self.m)**2.0 / (2.0 * self.s**2.0))
 
     def get_derivative(self, x):
         return -self.get_value(x) * (x-self.m)/self.s**2
@@ -90,9 +91,7 @@ def simulate(potential, method = 'langevin',
     for i, t in enumerate(tqdm(xs[:-1])):
         for j, x in enumerate(t):
             if method in ['lang', 'langevin']:
-                # V = drift + noise
-                vdt = C1 * potential.get_force(x) + C2 * np.random.normal()
-                xs[i+1][j] = x + vdt
+                xs[i+1][j] = x + C1 * potential.get_force(x) + C2 * np.random.normal()
             elif method in ['smol', 'smlouchowski']:
                 c = potential.get_derivative(x)
                 mu = x - C1*c
