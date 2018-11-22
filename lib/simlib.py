@@ -106,10 +106,17 @@ def print_simulate(name,
                    max_t = 1000, dt = 0.1,
                    num_particles = 1, num_bins = 20,
                    dstep = 1.0, D = 1.0, beta=1.0, x0 = 0.0):
-    """
-    Actuall simulation.
-    More details to come.
-    """
+
+    print('''Now starting simulation '{}', with the following parameters:
+method: {}
+number of particles = {}
+maximum time = {}, dt = {}
+k = {}, D = {}, beta = {}, x0 = {}'''.format(name,
+                                             method,
+                                             num_particles,
+                                             max_t, dt,
+                                             potential.k, D, beta, x0)
+          )
 
     C1 = D * beta * dt
     C2 = np.sqrt(2*D*dt)
