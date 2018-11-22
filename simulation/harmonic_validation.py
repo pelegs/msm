@@ -18,17 +18,15 @@ from simlib import *
 #dt = float(sys.argv[8])
 #num_steps = int(max_t/dt)
 
-methods = ['lang', 'smol']
 Ds = [1.0, 1.2]
 ks = [1.0, 1.3]
 betas = [1.0, 1.5]
 
-num_particles = 100000
-dt = 0.001
-max_t = 10
+method = sys.argv[1]
+num_particles = int(sys.argv[2])
+dt = float(sys.argv[3])
+max_t = float(sys.argv[4])
 
-for method in methods:
-    for D in Ds:
-        for k in ks:
-            for beta in betas:
-                print_simulate('harmonic_validation', harmonic_potential(k=k), method=method, num_particles=num_particles, dt=dt, max_t=max_t, x0=2, D=D, beta=beta)
+print_simulate('harmonic_validation', harmonic_potential(k=ks[0]),
+                method=method, num_particles=num_particles, dt=dt,
+                max_t=max_t, x0=2, D=Ds[0], beta=betas[0])
