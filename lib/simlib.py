@@ -203,7 +203,7 @@ D = {}, beta = {}, x0 = {}'''.format(name,
         f.write(line.encode())
 
 
-        for i, t in enumerate(tqdm(ts[1:-1])):
+        for i, t in enumerate(ts[1:-1]):
             for j in range(num_particles):
                 if method in ['lang', 'langevin']:
                     xs[j] = xs_prev[j] + C1 * potential.get_force(xs_prev[j]) + C2 * np.random.normal()
