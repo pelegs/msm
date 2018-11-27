@@ -67,3 +67,54 @@ cdef np.ndarray[double, ndim=2] csimulate(np.ndarray[double, ndim=1] x0s,
 
 def simulate(x0s, M=np.zeros(1), S=np.ones(1), D=1, beta=1, dt=0.01, steps=1000):
     return csimulate(x0s, M, S, D, beta, dt, steps)
+
+
+# ------------------ Simulate histogram ------------------ #
+
+cdef np.ndarray[double, ndim=1] c_simulate_hist(np.ndarray[double, ndim=1] x0s,
+                                                np.ndarray[double, ndim=1] bins,
+                                                np.ndarray[double, ndim=1] M,
+                                                np.ndarray[double, ndim=1] S,
+                                                double D, double beta,
+                                                double dt, int total_steps,
+                                                int step_block, int eq_time):
+
+    cdef int a
+    cdef int N = len(x0s)
+
+    cdef int num_blocks = total_steps // step_block
+    cdef np.ndarray[double, ndim=2] xs = np.zeros(shape=(step_block, N)).astype(np.float64)
+
+    xs[0] = x0s
+    cdef A = D * beta * dt
+    cdef B = sqrt(2*D*dt)
+    cdef np.ndarray[double, ndim=1] drift
+    cdef np.ndarray[double, ndim=1] noise
+
+    cdef np.ndarray[double, ndim=2] hist = np.zeros(shape=(step_block, len(bins[:-1])))
+    cdef np.ndarray[double, ndim=2] mean_hist_block = np.zeros(shape=(num_blocks, len(bins[:-1])))
+    cdef np.ndarray[double, ndim=1] mean_hist = np.zeros(len(bins[:-1]))
+
+    cdef int i
+    cdef int n
+    for block in tqdm(range(num_blocks)):
+        if block > 0:
+            xs_last = xs[-1]
+            xs = np.zeros(shape=(step_block, N)).astype(np.float64)
+            xs[0] = xs_last
+        for i in range(1, step_block):
+            drift = cgaussian_force(xs[i-1], M, S, beta) * A
+            noise = np.random.normal(0, 1, N) * B
+            xs[i] = xs[i-1] +  drift + noise
+            if i * block > eq_time:
+                hist[i] = np.histogram(xs[i], bins)[0]
+        mean_hist_block[block] = np.mean(hist, axis=0)
+    mean_hist = np.mean(mean_hist_block, axis=0)
+
+    cdef double area = np.sum(mean_hist)
+    return mean_hist / area
+
+def simulate_hist(x0s, bins,
+                  M=[0], S=[1], D=1, beta=1, dt=0.01,
+                  total_steps=1000, step_block=100, eq_time=100):
+    return c_simulate_hist(x0s, bins, M, S, D, beta, dt, total_steps, step_block, eq_time)
