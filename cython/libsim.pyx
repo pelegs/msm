@@ -19,12 +19,10 @@ cdef double multi_gauss(double x,
     cdef int k = len(M)
 
     for i in range(k):
-        #numen += (M[i]-x)/S[i]**2 * gauss(x, M[i], S[i])
-        #denom += denom + gauss(x, M[i], S[i])
-        numen = x
-        denom = 1.0
+        numen += (M[i]-x)/S[i]**2 * gauss(x, M[i], S[i])
+        denom += gauss(x, M[i], S[i])
 
-    return b_ * numen / denom
+    return b_*numen/denom
 
 
 cdef np.ndarray[double, ndim=1] cgaussian_force(np.ndarray[double, ndim=1] xs,
@@ -32,12 +30,11 @@ cdef np.ndarray[double, ndim=1] cgaussian_force(np.ndarray[double, ndim=1] xs,
                                                 np.ndarray[double, ndim=1] S,
                                                 double beta):
     cdef int N = len(xs)
-    cdef double A
     cdef np.ndarray[double, ndim=1] F = np.zeros(N)
 
     cdef int i
     for i in range(N):
-        F[i] = 1.0#multi_gauss(xs[i], M, S, beta)
+        F[i] = multi_gauss(xs[i], M, S, beta)
 
     return F
 
@@ -94,10 +91,8 @@ cdef np.ndarray[double, ndim=1] c_simulate_hist(np.ndarray[double, ndim=1] x0s,
     cdef np.ndarray[double, ndim=1] noise
 
     cdef np.ndarray[double, ndim=2] hist = np.zeros(shape=(step_block, len(bins[:-1])))
-    cdef np.ndarray[double, ndim=2] mean_hist_block = np.zeros(shape=(num_blocks, len(bins[:-1])))
+    cdef np.ndarray[double, ndim=2] hist_block = np.zeros(shape=(num_blocks, len(bins[:-1])))
     cdef np.ndarray[double, ndim=1] mean_hist = np.zeros(len(bins[:-1]))
-
-    cdef np.ndarray[double, ndim=1] X_axis = np.linspace(-5,5,N)
 
     cdef int i
     cdef int n
@@ -107,12 +102,14 @@ cdef np.ndarray[double, ndim=1] c_simulate_hist(np.ndarray[double, ndim=1] x0s,
             xs = np.zeros(shape=(step_block, N)).astype(np.float64)
             xs[0] = xs_last
         for i in range(1, step_block):
-            drift = cgaussian_force(X_axis, M, S, beta) * A
+            drift = cgaussian_force(xs[i-1], M, S, beta) * A
             noise = np.random.normal(0, 1, N) * B
-            xs[i] = 0.0#xs[i-1] +  drift + noise
-            mean_hist = np.histogram(drift, bins)
-    cdef double area = np.sum(mean_hist)
-    return mean_hist / area
+            xs[i] = xs[i-1] +  drift + noise
+            hist[i] = np.histogram(xs[i], bins)[0]
+        hist_block[block] = np.mean(hist, axis=0)
+    mean_hist = np.mean(hist_block, axis=0)
+
+    return mean_hist / np.sum(mean_hist)
 
 def simulate_hist(x0s, bins,
                   M=[0], S=[1], D=1, beta=1, dt=0.01,
