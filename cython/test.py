@@ -5,20 +5,20 @@ import numpy as np
 from scipy.special import erf
 
 N = 1000
-M = np.array([-2.5,2.5]).astype(np.float64)
-S = np.array([1,1]).astype(np.float64)
-D = 5
+M = np.array([0]).astype(np.float64)
+S = np.array([1]).astype(np.float64)
+D = 1
 beta = 1
 dt = 0.001
-total_steps = 500000
+total_steps = 10000
 step_block = 1000
-x0 = 0
+x0 = 0.0
 x_eq = 100
 eq_f = 1-x_eq/total_steps
 print('Eqilibration fraction: {:0.2f}%'.format((1-eq_f)*100))
 
-num_bins = 100
-bins = np.linspace(-10, 10, num_bins).astype(np.float64)
+num_bins = 500
+bins = np.linspace(-1, 1, num_bins).astype(np.float64)
 x0s = (np.ones(N) * x0).astype(np.float64)
 hist = simulate_hist(x0s, bins,
                      S=S, M=M, beta=beta, D=D,
