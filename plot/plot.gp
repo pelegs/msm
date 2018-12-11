@@ -1,4 +1,4 @@
-set terminal cairolatex standalone pdf color colortext size 20cm, 45cm
+set terminal cairolatex standalone pdf color colortext size 20cm, 60cm
 set output "plot.tex"
 
 if (!exists("MP_LEFT"))   MP_LEFT = .12
@@ -7,7 +7,7 @@ if (!exists("MP_BOTTOM")) MP_BOTTOM = .03
 if (!exists("MP_TOP"))    MP_TOP = .97
 if (!exists("MP_GAP"))    MP_GAP = 0.05
 
-set multiplot layout 3,1 margins screen MP_LEFT, MP_RIGHT, MP_BOTTOM, MP_TOP spacing screen MP_GAP
+set multiplot layout 4,1 margins screen MP_LEFT, MP_RIGHT, MP_BOTTOM, MP_TOP spacing screen MP_GAP
 
 set macros
 POS = "front at graph 0.03,0.92"
@@ -40,10 +40,10 @@ plot data3 u 1:($2-$3):($2-$3):($2+$3):($2+$3) with candlesticks lc rgb "#CCFF00
      data3 u 1:4 pt 7 ps 0.2 lc rgb "red" title "Theory"
 unset label
 
-#set yrange [0:90000]
-#set label '\huge$\mu=\left\{-6,-3,0,3,6\right\}$' @POS
-#set label '\huge$\sigma=\left\{1,0.9,0.8,0.9,0.8\right\}$' @POS2
-#data4 = "../psapir/cython/quad_well.data"
-#plot data4 u 1:2 pt 7 ps 0.4 lc rgb "#99AA00AA" title "Simulation",\
-#     data4 u 1:3 with boxes lc rgb "#DDFF00FF" title "Theory"
-#unset label
+set label '\huge$\mu=\left\{-5,-3,3,5\right\}$' @POS
+set label '\huge$\sigma=\left\{1,1.5,1.5,1\right\}$' @POS2
+data4 = "../data/quad_well.data"
+set yrange [0:*]
+plot data4 u 1:($2-$3):($2-$3):($2+$3):($2+$3) with candlesticks lc rgb "#CCFF00FF" title "Simulation",\
+     data4 u 1:4 pt 7 ps 0.2 lc rgb "purple" title "Theory"
+unset label
