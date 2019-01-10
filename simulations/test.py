@@ -1,45 +1,44 @@
 #!/usr/bin/env python3
 
-
 import numpy as np
 from scipy.special import erf
 import sys
 sys.path.append('../lib')
-print(sys.path)
-from libsim import simulate_hist
+from libsim import simulate_histogram
 
-name = 'double_well'
-num_particles = 1000
-M = np.array([-3,3]).astype(np.float64)
-S = np.array([1,1]).astype(np.float64)
-D = 50
-beta = 0.1
+
+def integral(a, b, M, S, N=1):
+    return N/(2*len(M)) * np.sum([erf((b-m)/(np.sqrt(2)*s)) - erf((a-m)/(np.sqrt(2)*s))
+                                 for m, s in zip(M, S)])
+
+
+name = 'single_well'
+num_particles = 5000
+M = np.array([0]).astype(np.float64)
+S = np.array([1]).astype(np.float64)
+D = 1
+beta = 1
 dt = 0.001
-total_steps = 500000
-step_block = 5000
-x0 = 0.0
-x_eq = 1000
-eq_f = 1-x_eq/total_steps
+total_steps = 100000
+equilibration_time = 1000
 
 print('Simulation:', name)
-print('Eqilibration fraction: {:0.2f}%'.format((1-eq_f)*100))
+print('Equilibration time = {}%'.format(equilibration_time/total_steps*100))
 
+x0 = 0.0
 num_bins = 150
-bins = np.linspace(-9, 9, num_bins).astype(np.float64)
-x0s = np.random.uniform(-9, 9, num_particles).astype(np.float64)
-hist, error = simulate_hist(x0s, bins,
-                            S=S, M=M, beta=beta, D=D,
-                            dt=dt, total_steps=total_steps,
-                            step_block=step_block, eq_time=x_eq,)
+bins = np.linspace(-5, 5, num_bins).astype(np.float64)
+hist = simulate_histogram(num_particles, x0, bins,
+                S=S, M=M,
+                D=D, beta=beta,
+                dt=dt, total_steps=total_steps, equilibration_time=equilibration_time,
+                )
 
-def integral(a, b, M, S):
-    return 1/(2*len(M)) * np.sum([erf((b-m)/(np.sqrt(2)*s)) - erf((a-m)/(np.sqrt(2)*s))
-                        for m, s in zip(M, S)])
+mean_hist = np.mean(hist, axis=0)
+stderr_hist = np.std(hist, axis=0)
 
-exp_norm_factor = total_steps * eq_f
-expected = exp_norm_factor * np.array([integral(bins[i], bins[i+1], M, S)
-                            for i in range(num_bins-1)])
+expected = [integral(bins[i], bins[i+1], M, S, total_steps) for i in range(num_bins-1)]
 
 with open('../data/{}.data'.format(name), 'w') as f:
-    for b, h, err, exp in zip(bins, hist, error, expected):
-        f.write('{} {} {} {}\n'.format(b, h, err, exp))
+    for x, m, err, exp in zip(bins[:-1], mean_hist, stderr_hist, expected):
+        f.write('{} {} {} {}\n'.format(x, m, err, exp))

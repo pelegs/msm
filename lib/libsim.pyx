@@ -41,79 +41,71 @@ cdef np.ndarray[double, ndim=1] cgaussian_force(np.ndarray[double, ndim=1] xs,
 
 # ------------------ Simulate function ------------------ #
 
-cdef np.ndarray[double, ndim=2] csimulate(np.ndarray[double, ndim=1] x0s,
-                                          np.ndarray[double, ndim=1] M,
-                                          np.ndarray[double, ndim=1] S,
-                                          double D, double beta,
-                                          double dt, int steps):
+cdef int c_simulate(str name,
+                    np.ndarray[double, ndim=1] x0s,
+                    np.ndarray[double, ndim=1] M,
+                    np.ndarray[double, ndim=1] S,
+                    double D, double beta,
+                    double dt, int total_steps):
 
-    cdef int a
-    cdef int N = len(x0s)
-    cdef np.ndarray[double, ndim=2] xs = np.zeros(shape=(steps, N)).astype(np.float64)
-    xs[0] = x0s
-    cdef A = D * beta * dt
-    cdef B = sqrt(2*D*dt)
-    cdef np.ndarray[double, ndim=1] drift
-    cdef np.ndarray[double, ndim=1] noise
+    cdef int num_particles = len(x0s)
+    cdef np.ndarray[double, ndim=1] xs = np.zeros(num_particles).astype(np.float64)
 
+    cdef double A = D * beta * dt
+    cdef double B = sqrt(2*D*dt)
+
+    cdef str xs_str = ''
     cdef int i
-    for i in tqdm(range(1, steps)):
-        drift = cgaussian_force(xs[i-1], M, S, beta) * A
-        noise = np.random.normal(0, 1, N) * B
-        xs[i] = xs[i-1] +  drift + noise
+    with open('../data/{}.data'.format(name), 'w') as f:
+        for i in tqdm(range(total_steps)):
+            drift = A * cgaussian_force(xs, M, S, beta)
+            noise = B * np.random.normal(0, 1, num_particles)
+            xs += drift + noise
+            xs_str = ' '.join(map(str, xs))
+            f.write('{}\n'.format(xs_str))
 
-    return xs
+    return 0
 
-def simulate(x0s, M=np.zeros(1), S=np.ones(1), D=1, beta=1, dt=0.01, steps=1000):
-    return csimulate(x0s, M, S, D, beta, dt, steps)
-
+def simulate(name, x0s, M=0.0, S=1.0, D=1.0, beta=1.0, dt=0.01, total_steps=1000):
+    c_simulate(name, x0s, M, S, D, beta, dt, total_steps)
+    return 0
 
 # ------------------ Simulate histogram ------------------ #
 
-cdef np.ndarray[double, ndim=1] c_simulate_hist(np.ndarray[double, ndim=1] x0s,
-                                                np.ndarray[double, ndim=1] bins,
-                                                np.ndarray[double, ndim=1] M,
-                                                np.ndarray[double, ndim=1] S,
-                                                double D, double beta,
-                                                double dt, int total_steps,
-                                                int step_block, int eq_time):
+cdef np.ndarray[long, ndim=2] c_simulate_histogram(int num_particles,
+                                                  double x0,
+                                                  np.ndarray[double, ndim=1] bins,
+                                                  np.ndarray[double, ndim=1] M,
+                                                  np.ndarray[double, ndim=1] S,
+                                                  double D, double beta,
+                                                  double dt, int total_steps, int equilibration_time):
 
-    cdef int num_particles = len(x0s)
-    cdef int num_bins = len(bins[:-1])
+    cdef np.ndarray[double, ndim=1] x = np.zeros(total_steps)
+    x[0] = x0
 
-    cdef int num_blocks = total_steps // step_block
-    cdef np.ndarray[double, ndim=2] xs = np.zeros(shape=(step_block, num_particles)).astype(np.float64)
+    cdef int t, i
 
-    xs[0] = x0s
     cdef double A = D * beta * dt
     cdef double B = sqrt(2*D*dt)
-    cdef np.ndarray[double, ndim=1] drift
-    cdef np.ndarray[double, ndim=1] noise
 
-    cdef np.ndarray[double, ndim=2] hist = np.zeros(shape=(num_bins, num_particles))
-    cdef np.ndarray[double, ndim=1] mean_hist = np.zeros(num_bins)
-    cdef np.ndarray[double, ndim=1] std_hist = np.zeros(num_bins)
-    cdef np.ndarray[double, ndim=2] results = np.zeros(shape=(2, num_bins))
+    cdef int num_bins = len(bins)-1
+    cdef np.ndarray[long, ndim=2] hist = np.zeros(shape=(num_particles, num_bins)).astype(int)
 
-    cdef int i
-    for block in tqdm(range(num_blocks)):
-        if block > 0:
-            xs_last = xs[-1]
-            xs = np.zeros(shape=(step_block, num_particles)).astype(np.float64)
-            xs[0] = xs_last
-        for i in range(step_block):
-            drift = A * cgaussian_force(xs[i-1], M, S, beta)
-            noise = B * np.random.normal(0, 1, num_particles)
-            xs[i] = xs[i-1] + drift + noise
-        for n in range(num_particles):
-            hist[:,n] += np.histogram(xs[:,n], bins)[0]
+    for i in tqdm(range(num_particles)):
+        for t in range(1, total_steps):
+            drift = A * multi_gauss(x[t-1], M, S, beta)
+            noise = B * np.random.normal(0, 1)
+            x[t] = x[t-1] + drift + noise
+        hist[i], _ = np.histogram(x[equilibration_time:], bins)
 
-    hist = hist.T
-    results[0] = np.mean(hist, axis=0)
-    results[1] = np.std(hist, axis=0)
-    return results
+    return hist
 
-def simulate_hist(x0s, bins,
-                  M=[0], S=[1], D=1, beta=1, dt=0.01,
-                  total_steps=1000, step_block=100, eq_time=100):
-    return c_simulate_hist(x0s, bins, M, S, D, beta, dt, total_steps, step_block, eq_time)
+def simulate_histogram(num_particles=100, x0=0.0,
+                       bins=np.linspace(-5, 5, 100),
+                       M=[0], S=[1],
+                       D=1, beta=1,
+                       dt=0.001, total_steps=1000, equilibration_time=0):
+    return c_simulate_histogram(num_particles, x0, bins,
+                                M, S,
+                                D, beta,
+                                dt, total_steps, equilibration_time)
