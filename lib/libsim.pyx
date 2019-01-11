@@ -73,12 +73,12 @@ def simulate(name, x0s, M=0.0, S=1.0, D=1.0, beta=1.0, dt=0.01, total_steps=1000
 # ------------------ Simulate histogram ------------------ #
 
 cdef np.ndarray[long, ndim=2] c_simulate_histogram(int num_particles,
-                                                  double x0,
-                                                  np.ndarray[double, ndim=1] bins,
-                                                  np.ndarray[double, ndim=1] M,
-                                                  np.ndarray[double, ndim=1] S,
-                                                  double D, double beta,
-                                                  double dt, int total_steps, int equilibration_time):
+                                                   int random, double xmin, double xmax, double x0,
+                                                   np.ndarray[double, ndim=1] bins,
+                                                   np.ndarray[double, ndim=1] M,
+                                                   np.ndarray[double, ndim=1] S,
+                                                   double D, double beta,
+                                                   double dt, int total_steps, int equilibration_time):
 
     cdef np.ndarray[double, ndim=1] x = np.zeros(total_steps)
     x[0] = x0
@@ -91,6 +91,12 @@ cdef np.ndarray[long, ndim=2] c_simulate_histogram(int num_particles,
     cdef int num_bins = len(bins)-1
     cdef np.ndarray[long, ndim=2] hist = np.zeros(shape=(num_particles, num_bins)).astype(int)
 
+    cdef np.ndarray[double, ndim=1] x0s
+    if random:
+        x0s = np.random.uniform(xmin, xmax, size=num_particles)
+    else:
+        x0s = np.ones(num_particles).astype(np.float64)
+
     for i in tqdm(range(num_particles)):
         for t in range(1, total_steps):
             drift = A * multi_gauss(x[t-1], M, S, beta)
@@ -100,12 +106,15 @@ cdef np.ndarray[long, ndim=2] c_simulate_histogram(int num_particles,
 
     return hist
 
-def simulate_histogram(num_particles=100, x0=0.0,
+def simulate_histogram(num_particles=100,
+                       random=0, xmin=0, xmax=0, x0=0.0,
                        bins=np.linspace(-5, 5, 100),
                        M=[0], S=[1],
                        D=1, beta=1,
                        dt=0.001, total_steps=1000, equilibration_time=0):
-    return c_simulate_histogram(num_particles, x0, bins,
+    return c_simulate_histogram(num_particles,
+                                random, xmin, xmax, x0,
+                                bins,
                                 M, S,
                                 D, beta,
                                 dt, total_steps, equilibration_time)

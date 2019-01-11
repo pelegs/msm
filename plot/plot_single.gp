@@ -8,5 +8,5 @@ set ylabel '\Huge Frequency' offset -2,0
 
 data = "../data/single_well.data"
 set yrange [0:*]
-plot data u 1:2 pt 7 ps 0.3 lc rgb "blue" title "Simulation",\
+plot data u 1:2:($3*0.5) with yerrorbars pt 7 ps 0.3 lc rgb "blue" title "Simulation",\
      data u 1:4 pt 7 ps 0.3 lc rgb "red" title "Theory"
