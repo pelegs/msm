@@ -25,10 +25,10 @@ cdef double multi_gauss(double x,
     return b_*numen/denom
 
 
-cdef np.ndarray[double, ndim=1] cgaussian_force(np.ndarray[double, ndim=1] xs,
-                                                np.ndarray[double, ndim=1] M,
-                                                np.ndarray[double, ndim=1] S,
-                                                double beta):
+cdef np.ndarray[double, ndim=1] c_gaussian_force(np.ndarray[double, ndim=1] xs,
+                                                 np.ndarray[double, ndim=1] M,
+                                                 np.ndarray[double, ndim=1] S,
+                                                 double beta):
     cdef int N = len(xs)
     cdef np.ndarray[double, ndim=1] F = np.zeros(N)
 
@@ -41,34 +41,51 @@ cdef np.ndarray[double, ndim=1] cgaussian_force(np.ndarray[double, ndim=1] xs,
 
 # ------------------ Simulate function ------------------ #
 
-cdef int c_simulate(str name,
-                    np.ndarray[double, ndim=1] x0s,
-                    np.ndarray[double, ndim=1] M,
-                    np.ndarray[double, ndim=1] S,
-                    double D, double beta,
-                    double dt, int total_steps):
+cdef np.ndarray[long, ndim=2] c_simulate(str name,
+                                         int num_particles,
+                                         int random, double xmin, double xmax,
+                                         np.ndarray[double, ndim=1] x0s,
+                                         np.ndarray[double, ndim=1] M,
+                                         np.ndarray[double, ndim=1] S,
+                                         double D, double beta,
+                                         double dt, int total_steps, int equilibration_time):
 
-    cdef int num_particles = len(x0s)
-    cdef np.ndarray[double, ndim=1] xs = np.zeros(num_particles).astype(np.float64)
+    cdef np.ndarray[double, ndim=1] xs = np.zeros(total_steps, num_particles)
+    xs[0] = x0s
+
+    cdef int t, i
 
     cdef double A = D * beta * dt
     cdef double B = sqrt(2*D*dt)
 
+    if random:
+        x0s = np.random.uniform(xmin, xmax, size=num_particles)
+    else:
+        x0s = np.ones(num_particles).astype(np.float64)
+
     cdef str xs_str = ''
-    cdef int i
     with open('../data/{}.data'.format(name), 'w') as f:
-        for i in tqdm(range(total_steps)):
-            drift = A * cgaussian_force(xs, M, S, beta)
+        for t in tqdm(range(1, total_steps)):
+            drift = A * c_gaussian_force(xs[i, t-1], M, S, beta)
             noise = B * np.random.normal(0, 1, num_particles)
-            xs += drift + noise
-            xs_str = ' '.join(map(str, xs))
-            f.write('{}\n'.format(xs_str))
+            xs[t] = xs[t-1] + drift + noise
+            x_str = ' '.join(map(str, xs))
+            f.write('{}\n'.format(x_str))
 
     return 0
 
-def simulate(name, x0s, M=0.0, S=1.0, D=1.0, beta=1.0, dt=0.01, total_steps=1000):
-    c_simulate(name, x0s, M, S, D, beta, dt, total_steps)
-    return 0
+def simulate(name,
+             num_particles=100,
+             random=0, xmin=0, xmax=0, x0=0.0,
+             M=[0], S=[1],
+             D=1, beta=1,
+             dt=0.001, total_steps=1000, equilibration_time=0):
+    return c_simulate(name,
+                      num_particles,
+                      random, xmin, xmax, x0,
+                      M, S,
+                      D, beta,
+                      dt, total_steps, equilibration_time)
 
 # ------------------ Simulate histogram ------------------ #
 

@@ -46,7 +46,7 @@
 \fi
 \makeatother
 % Set papersize
-\usepackage[papersize={566.00bp,566.00bp},text={566.00bp,566.00bp}]{geometry}
+\usepackage[papersize={360.00bp,216.00bp},text={360.00bp,216.00bp}]{geometry}
 % No page numbers and no paragraph indentation
 \pagestyle{empty}
 \setlength{\parindent}{0bp}%
@@ -56,7 +56,7 @@
 }{%
  \typeout{No configuration file gnuplot.cfg found.}%
 }%
-%
+\newcommand{\hl}[1]{\setlength{\fboxsep}{0.75pt}\colorbox{white}{#1}}
 \begin{document}
 \begingroup
   \makeatletter
@@ -138,55 +138,49 @@
     \fi%
     \setlength{\fboxrule}{0.5pt}%
     \setlength{\fboxsep}{1pt}%
-\begin{picture}(11320.00,11320.00)%
+\begin{picture}(7200.00,4320.00)%
     \gplgaddtomacro\gplbacktext{%
       \csname LTb\endcsname%%
-      \put(849,781){\makebox(0,0)[r]{\strut{}$0$}}%
+      \put(645,595){\makebox(0,0)[r]{\strut{}$0$}}%
       \csname LTb\endcsname%%
-      \put(849,1816){\makebox(0,0)[r]{\strut{}$2000$}}%
+      \put(645,1037){\makebox(0,0)[r]{\strut{}$100$}}%
       \csname LTb\endcsname%%
-      \put(849,2851){\makebox(0,0)[r]{\strut{}$4000$}}%
+      \put(645,1480){\makebox(0,0)[r]{\strut{}$200$}}%
       \csname LTb\endcsname%%
-      \put(849,3887){\makebox(0,0)[r]{\strut{}$6000$}}%
+      \put(645,1922){\makebox(0,0)[r]{\strut{}$300$}}%
       \csname LTb\endcsname%%
-      \put(849,4922){\makebox(0,0)[r]{\strut{}$8000$}}%
+      \put(645,2364){\makebox(0,0)[r]{\strut{}$400$}}%
       \csname LTb\endcsname%%
-      \put(849,5957){\makebox(0,0)[r]{\strut{}$10000$}}%
+      \put(645,2806){\makebox(0,0)[r]{\strut{}$500$}}%
       \csname LTb\endcsname%%
-      \put(849,6992){\makebox(0,0)[r]{\strut{}$12000$}}%
+      \put(645,3249){\makebox(0,0)[r]{\strut{}$600$}}%
       \csname LTb\endcsname%%
-      \put(849,8027){\makebox(0,0)[r]{\strut{}$14000$}}%
+      \put(645,3691){\makebox(0,0)[r]{\strut{}$700$}}%
       \csname LTb\endcsname%%
-      \put(849,9063){\makebox(0,0)[r]{\strut{}$16000$}}%
+      \put(645,4133){\makebox(0,0)[r]{\strut{}$800$}}%
       \csname LTb\endcsname%%
-      \put(849,10098){\makebox(0,0)[r]{\strut{}$18000$}}%
+      \put(747,409){\makebox(0,0){\strut{}$-6$}}%
       \csname LTb\endcsname%%
-      \put(849,11133){\makebox(0,0)[r]{\strut{}$20000$}}%
+      \put(1771,409){\makebox(0,0){\strut{}$-4$}}%
       \csname LTb\endcsname%%
-      \put(1670,595){\makebox(0,0){\strut{}$-6$}}%
+      \put(2796,409){\makebox(0,0){\strut{}$-2$}}%
       \csname LTb\endcsname%%
-      \put(3107,595){\makebox(0,0){\strut{}$-4$}}%
+      \put(3820,409){\makebox(0,0){\strut{}$0$}}%
       \csname LTb\endcsname%%
-      \put(4545,595){\makebox(0,0){\strut{}$-2$}}%
+      \put(4844,409){\makebox(0,0){\strut{}$2$}}%
       \csname LTb\endcsname%%
-      \put(5982,595){\makebox(0,0){\strut{}$0$}}%
+      \put(5869,409){\makebox(0,0){\strut{}$4$}}%
       \csname LTb\endcsname%%
-      \put(7419,595){\makebox(0,0){\strut{}$2$}}%
-      \csname LTb\endcsname%%
-      \put(8857,595){\makebox(0,0){\strut{}$4$}}%
-      \csname LTb\endcsname%%
-      \put(10294,595){\makebox(0,0){\strut{}$6$}}%
+      \put(6893,409){\makebox(0,0){\strut{}$6$}}%
     }%
     \gplgaddtomacro\gplfronttext{%
       \csname LTb\endcsname%%
-      \put(5982,130){\makebox(0,0){\strut{}\Huge$x$}}%
+      \put(153,2364){\rotatebox{-270}{\makebox(0,0){\strut{}$U\left(x\right)$}}}%
       \csname LTb\endcsname%%
-      \put(10225,10966){\makebox(0,0)[r]{\strut{}Simulation}}%
-      \csname LTb\endcsname%%
-      \put(10225,10780){\makebox(0,0)[r]{\strut{}Theory}}%
+      \put(3820,130){\makebox(0,0){\strut{}$x$}}%
     }%
     \gplbacktext
-    \put(0,0){\includegraphics{plot_single-inc}}%
+    \put(0,0){\includegraphics{gauss-inc}}%
     \gplfronttext
   \end{picture}%
 \endgroup
