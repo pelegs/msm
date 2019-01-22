@@ -4,7 +4,7 @@ import numpy as np
 from scipy.special import erf
 import sys
 sys.path.append('../lib')
-from libsim import simulate_histogram
+from libsim import simulate, simulate_histogram
 
 
 def integral(a, b, M, S, N=1):
@@ -29,10 +29,10 @@ print('Equilibration time = {}%'.format(equilibration_time/total_steps*100))
 x0 = 0.0
 num_bins = 150
 bins = np.linspace(xmin, xmax, num_bins).astype(np.float64)
-hist = simulate(num_particles,
-                random=1, xmin=xmin, xmax=xmax, x0=x0,
-                bins=bins,
+hist = simulate(name,
+                num_particles,
+                random=1, xmin=xmin, xmax=xmax,
                 S=S, M=M,
                 D=D, beta=beta,
                 dt=dt, total_steps=total_steps, equilibration_time=equilibration_time,
-                          )
+                )
