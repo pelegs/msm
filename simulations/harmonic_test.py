@@ -12,26 +12,24 @@ def integral(a, b, M, S, N=1):
                                  for m, s in zip(M, S)])
 
 
-name = 'double_well'
-num_particles = 5000
-M = np.array([-3, 3]).astype(np.float64)
-S = np.array([1, 1]).astype(np.float64)
+name = 'harmonic_test'
+num_particles = 1000
+M = np.array([0]).astype(np.float64)
+S = np.array([1]).astype(np.float64)
 D = 1
 beta = 1
 dt = 0.001
-total_step = 50000
+total_steps = 1000
 equilibration_time = 50
-xmin, xmax = [-7, 7]
+x0 = 1
+x0s = np.ones(num_particles) * x0
 
 print('Simulation:', name)
 print('Equilibration time = {}%'.format(equilibration_time/total_steps*100))
 
-x0 = 0.0
-num_bins = 150
-bins = np.linspace(xmin, xmax, num_bins).astype(np.float64)
 hist = simulate(name,
                 num_particles,
-                random=1, xmin=xmin, xmax=xmax,
+                random=0, x0s=x0s,
                 S=S, M=M,
                 D=D, beta=beta,
                 dt=dt, total_steps=total_steps, equilibration_time=equilibration_time,

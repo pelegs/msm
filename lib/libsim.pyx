@@ -39,16 +39,60 @@ cdef np.ndarray[double, ndim=1] c_gaussian_force(np.ndarray[double, ndim=1] xs,
     return F
 
 
-# ------------------ Simulate function ------------------ #
+# ------------------ Simulate to ndarray ------------------ #
 
-cdef int c_simulate(str name,
-                    int num_particles,
-                    int random, double xmin, double xmax,
-                    np.ndarray[double, ndim=1] x0s,
-                    np.ndarray[double, ndim=1] M,
-                    np.ndarray[double, ndim=1] S,
-                    double D, double beta,
-                    double dt, int total_steps, int equilibration_time):
+cdef np.ndarray[double, ndim=2] c_simulate(str name,
+                                           int num_particles,
+                                           int random, double xmin, double xmax,
+                                           np.ndarray[double, ndim=1] x0s,
+                                           np.ndarray[double, ndim=1] M,
+                                           np.ndarray[double, ndim=1] S,
+                                           double D, double beta,
+                                           double dt, int total_steps, int equilibration_time):
+
+    cdef np.ndarray[double, ndim=2] xs = np.zeros(shape=(total_steps, num_particles))
+
+    cdef double A = D * beta * dt
+    cdef double B = sqrt(2*D*dt)
+
+    if random:
+        xs[0] = np.random.uniform(xmin, xmax, size=num_particles)
+    else:
+        xs[0] = x0s
+
+    cdef str xs_str = ''
+    cdef int t, i
+    for t in tqdm(range(1, total_steps)):
+        drift = A * c_gaussian_force(xs[t-1], M, S, beta)
+        noise = B * np.random.normal(0, 1, num_particles)
+        xs[t] = xs[t-1] + drift + noise
+
+    return xs
+
+def simulate(name,
+             num_particles=100,
+             random=0, xmin=0, xmax=0, x0s=np.random.uniform(size=10),
+             M=[0], S=[1],
+             D=1, beta=1,
+             dt=0.001, total_steps=1000, equilibration_time=0):
+    return c_simulate(name,
+                      num_particles,
+                      random, xmin, xmax, x0s,
+                      M, S,
+                      D, beta,
+                      dt, total_steps, equilibration_time)
+
+
+# ------------------ Simulate to file ------------------ #
+
+cdef int c_simulate_to_file(str name,
+                            int num_particles,
+                            int random, double xmin, double xmax,
+                            np.ndarray[double, ndim=1] x0s,
+                            np.ndarray[double, ndim=1] M,
+                            np.ndarray[double, ndim=1] S,
+                            double D, double beta,
+                            double dt, int total_steps, int equilibration_time):
 
     cdef np.ndarray[double, ndim=1] xs = np.zeros(num_particles)
 
@@ -72,18 +116,18 @@ cdef int c_simulate(str name,
 
     return 0
 
-def simulate(name,
-             num_particles=100,
-             random=0, xmin=0, xmax=0, x0s=np.random.uniform(size=10),
-             M=[0], S=[1],
-             D=1, beta=1,
-             dt=0.001, total_steps=1000, equilibration_time=0):
-    return c_simulate(name,
-                      num_particles,
-                      random, xmin, xmax, x0s,
-                      M, S,
-                      D, beta,
-                      dt, total_steps, equilibration_time)
+def simulate_to_file(name,
+                     num_particles=100,
+                     random=0, xmin=0, xmax=0, x0s=np.random.uniform(size=10),
+                     M=[0], S=[1],
+                     D=1, beta=1,
+                     dt=0.001, total_steps=1000, equilibration_time=0):
+    return c_simulate_to_file(name,
+                              num_particles,
+                              random, xmin, xmax, x0s,
+                              M, S,
+                              D, beta,
+                              dt, total_steps, equilibration_time)
 
 # ------------------ Simulate histogram ------------------ #
 
