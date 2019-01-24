@@ -7,7 +7,7 @@ from tqdm import tqdm
 # ------------------ Gaussian force ------------------ #
 
 cdef double gauss(double x, double m, double s):
-    return 1/(sqrt(2*pi)*s) * exp(-(x-m)**2/(2*s**2))
+    return 1/sqrt(2*pi*s**2) * exp(-(x-m)**2/(2*s**2))
 
 cdef double multi_gauss(double x,
                         np.ndarray[double, ndim=1] M,
@@ -41,8 +41,7 @@ cdef np.ndarray[double, ndim=1] c_gaussian_force(np.ndarray[double, ndim=1] xs,
 
 # ------------------ Simulate to ndarray ------------------ #
 
-cdef np.ndarray[double, ndim=2] c_simulate(str name,
-                                           int num_particles,
+cdef np.ndarray[double, ndim=2] c_simulate(int num_particles,
                                            int random, double xmin, double xmax,
                                            np.ndarray[double, ndim=1] x0s,
                                            np.ndarray[double, ndim=1] M,
@@ -69,14 +68,12 @@ cdef np.ndarray[double, ndim=2] c_simulate(str name,
 
     return xs
 
-def simulate(name,
-             num_particles=100,
+def simulate(num_particles=100,
              random=0, xmin=0, xmax=0, x0s=np.random.uniform(size=10),
              M=[0], S=[1],
              D=1, beta=1,
              dt=0.001, total_steps=1000, equilibration_time=0):
-    return c_simulate(name,
-                      num_particles,
+    return c_simulate(num_particles,
                       random, xmin, xmax, x0s,
                       M, S,
                       D, beta,
