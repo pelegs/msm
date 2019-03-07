@@ -4,6 +4,7 @@ import numpy as np
 from numpy import exp, sqrt, pi, log
 sqrt_2pi = 1/sqrt(2*pi)
 from tqdm import tqdm
+from scipy.stats import linregress
 
 
 def gauss(x, a, m, s):
@@ -33,14 +34,14 @@ Sig = np.array([[1, 1],
                 [1, 1]])
 """
 
-num_particles = 500
+num_particles = 5000
 num_dim = 1
 num_steps = 100
 num_gaussians = 2
 
 dt = 0.01
 beta = 1
-D = 1
+D = np.random.uniform(0.1, 2.7)
 A = D*beta*dt
 B = np.sqrt(2*D*dt)
 
@@ -52,8 +53,12 @@ for t in tqdm(range(1, num_steps)):
         noise = B*np.random.normal(size=num_dim)
         Xs[t,p,:] = Xs[t-1,p,:] + drift + noise
 
+ts = range(num_steps)
 mean = np.mean(Xs[:,:,0], axis=1)
 var = np.var(Xs[:,:,0], axis=1)
 
-for t, m, v in zip(range(num_steps), mean, var):
-    print(t, m, v)
+# Linear regression
+slope_mean, intercept_mean, r_value_mean, p_value_mean, std_err = linregress(ts, mean)
+slope_var, intercept_var, r_value_var, p_value_var, std_err = linregress(ts, var)
+#print('mean: y={} + {}, r^2={}'.format(slope_mean, intercept_mean, r_value_mean))
+print('var: y={:0.3f} (2Ddt={:0.3f}) + {:0.3f}, r^2={:0.3f}'.format(slope_var, 2*D*dt, intercept_var, r_value_var))
