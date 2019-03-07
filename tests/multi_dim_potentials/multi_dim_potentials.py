@@ -34,14 +34,14 @@ Sig = np.array([[1, 1],
                 [1, 1]])
 """
 
-num_particles = 5000
+num_particles = 10000
 num_dim = 1
 num_steps = 100
 num_gaussians = 2
 
 dt = 0.01
 beta = 1
-D = np.random.uniform(0.1, 2.7)
+D = np.random.uniform(0.1, 13.37)
 A = D*beta*dt
 B = np.sqrt(2*D*dt)
 
@@ -54,8 +54,9 @@ for t in tqdm(range(1, num_steps)):
         Xs[t,p,:] = Xs[t-1,p,:] + drift + noise
 
 ts = range(num_steps)
-mean = np.mean(Xs[:,:,0], axis=1)
-var = np.var(Xs[:,:,0], axis=1)
+pos = Xs[:,:,0]
+mean = np.mean(pos, axis=1)
+var = np.var(pos, axis=1)
 
 # Linear regression
 slope, intercept, r_value, p_value, std_err = linregress(ts, var)
