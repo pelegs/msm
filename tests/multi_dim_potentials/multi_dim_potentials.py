@@ -58,7 +58,5 @@ mean = np.mean(Xs[:,:,0], axis=1)
 var = np.var(Xs[:,:,0], axis=1)
 
 # Linear regression
-slope_mean, intercept_mean, r_value_mean, p_value_mean, std_err = linregress(ts, mean)
-slope_var, intercept_var, r_value_var, p_value_var, std_err = linregress(ts, var)
-#print('mean: y={} + {}, r^2={}'.format(slope_mean, intercept_mean, r_value_mean))
-print('var: y={:0.3f} (2Ddt={:0.3f}) + {:0.3f}, r^2={:0.3f}'.format(slope_var, 2*D*dt, intercept_var, r_value_var))
+slope, intercept, r_value, p_value, std_err = linregress(ts, var)
+print('var: y={:0.3f} (2Ddt={:0.3f}) + {:0.3f}, r^2={:0.3f}'.format(slope, 2*D*dt, intercept, r_value))
