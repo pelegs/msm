@@ -2,7 +2,7 @@
 
 import numpy as np
 from numpy import exp, sqrt, pi, log
-sqrt_2pi = 1/sqrt(2*pi)
+from scipy.special import erf
 from tqdm import tqdm
 from scipy.stats import linregress
 from sys import stderr
@@ -36,8 +36,11 @@ Sig = np.array([[1, 1],
                 [1, 1]])
 """
 
-num_particles = 100
-num_dim = 1
+sqrt_2pi = 1/sqrt(2*pi)
+sqrt2 = sqrt(2)
+
+num_particles = 50
+num_dim = 100
 num_steps = 5000
 num_gaussians = 2
 
@@ -90,5 +93,32 @@ def mean_var():
     for t, m, v in zip(range(num_steps), mean, var):
         print(t, m, v)
 
-def histogram():
-    pass
+def single_indefinite_integral(x, m, s):
+    return erf((m-x)/(sqrt2*s)) / 2
+
+def single_integral(a, b, m, s):
+    return single_indefinite_integral(b, m, s) - single_indefinite_integral(a, m, s)
+
+def integral(a, b, M, S, N=1):
+    return np.sum([single_integral(a, b, m, s) for m, s in zip(M, S)]) * N / len(M)
+
+def histogram(xmin=-5, xmax=5, dx=0.1, t0=0):
+    # Histogram of positions
+    pos = Xs[t0:,:,:].flatten()
+    frac = 1-(t0/len(Xs))
+    bins = np.arange(xmin, xmax, dx)
+    hist, _ = np.histogram(pos, bins)
+    N = num_steps * num_dim * num_particles * frac
+    expectation = [integral(bins[i+1], bins[i], [-3, 3], [1, 1], N) for i, b in enumerate(bins[:-1])]
+    for b, h, e in zip(bins, hist, expectation):
+        print(b, h, e)
+
+def two_dim_potential():
+    Amp = np.array([[1, 1],
+                    [1, 0,]])
+    Mu = np.array([[-3, 3],
+                    0, 0]])
+    Sig = np.array([[1, 1],
+                    [1, 1]])
+
+histogram(-10, 10, 0.1, 1000)
