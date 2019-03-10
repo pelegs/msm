@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
 
+"""
+Example for parameters:
+Amp = np.array([[1, 1],
+                [1, 1, 1],
+                [1, 1]])
+Mu  = np.array([[-5, 5],
+                [-3, 0, 3],
+                [-4, 4]])
+Sig = np.array([[1, 1],
+                [1, 1, 1],
+                [1, 1]])
+"""
+
 import numpy as np
 from numpy import exp, sqrt, pi, log
 from scipy.special import erf
@@ -23,25 +36,13 @@ def force(X, A, M, S, beta=1.0):
     return np.array([gauss_force_dim(x, a, m, s)
                      for x, a, m, s in zip(X, A, M, S)])
 
-"""
-Example for parameters:
-Amp = np.array([[1, 1],
-                [1, 1, 1],
-                [1, 1]])
-Mu  = np.array([[-5, 5],
-                [-3, 0, 3],
-                [-4, 4]])
-Sig = np.array([[1, 1],
-                [1, 1, 1],
-                [1, 1]])
-"""
 
 sqrt_2pi = 1/sqrt(2*pi)
 sqrt2 = sqrt(2)
 
-num_particles = 50
-num_dim = 100
-num_steps = 5000
+num_particles = 100
+num_dim = 2
+num_steps = 1000
 num_gaussians = 2
 
 dt = 0.01
@@ -52,24 +53,8 @@ B = np.sqrt(2*D*dt)
 
 Amp = np.ones(shape=(num_dim, num_gaussians))
 Mu = np.zeros(shape=(num_dim, num_gaussians))
-Mu[:,0] = -3
-Mu[:,1] = 3
 Sig = np.ones(shape=(num_dim, num_gaussians))
-
-Xs = np.zeros(shape=(num_steps, num_particles, num_dim))
-Xs[0,0,:] = np.ones(num_dim) * 3.7
-
-for t in tqdm(range(1, num_steps)):
-    for p in range(num_particles):
-        drift = A*force(Xs[t-1,p,:], Amp, Mu, Sig, beta)
-        noise = B*np.random.normal(size=num_dim)
-        Xs[t,p,:] = Xs[t-1,p,:] + drift + noise
-
-        ## Check Force vs. Position
-        #forces = force(Xs[t-1,p,:], Amp, Mu, Sig, beta)
-        #for x, F in zip(Xs[t-1,p,:], forces):
-        #    print(x, F, end=' ')
-        #print('')
+Xs = np.random.uniform(-10, 10, size=(num_steps, num_particles, num_dim))
 
 
 """
@@ -113,12 +98,45 @@ def histogram(xmin=-5, xmax=5, dx=0.1, t0=0):
     for b, h, e in zip(bins, hist, expectation):
         print(b, h, e)
 
-def two_dim_potential():
-    Amp = np.array([[1, 1],
-                    [1, 0,]])
-    Mu = np.array([[-3, 3],
-                    0, 0]])
-    Sig = np.array([[1, 1],
-                    [1, 1]])
+# TODO: Implement a 2D histogram?
 
-histogram(-10, 10, 0.1, 1000)
+def two_dim_potential():
+    Amp = np.array([[1, 1, 1],
+                    [1, 0, 1]])
+    Mu = np.array([[-6, 0, 6],
+                   [-7, 0, 7]])
+    Sig = np.array([[1, 1, 1],
+                    [1, 1, 1]])
+    return Amp, Mu, Sig
+
+def histogram_2d(data, xrange=(-10, 10), yrange=(-10, 10), dx=0.5, dy=0.5):
+    xbins = np.arange(xrange[0], xrange[1], dx)
+    ybins = np.arange(yrange[0], yrange[1], dy)
+    hist, xedges, yedges = np.histogram2d(data[:,0], data[:,1], bins=(xbins, ybins))
+    for row in hist:
+        print(' '.join(map(str, row)))
+
+"""
+SIMULATION
+"""
+def main_sim():
+    for t in tqdm(range(1, num_steps)):
+        for p in range(num_particles):
+            drift = A*force(Xs[t-1,p,:], Amp, Mu, Sig, beta)
+            noise = B*np.random.normal(size=num_dim)
+            Xs[t,p,:] = Xs[t-1,p,:] + drift + noise
+
+            ## Check Force vs. Position
+            #forces = force(Xs[t-1,p,:], Amp, Mu, Sig, beta)
+            #for x, F in zip(Xs[t-1,p,:], forces):
+            #    print(x, F, end=' ')
+            #print('')
+
+
+Amp, Mu, Sig = two_dim_potential()
+main_sim()
+
+pos = Xs[:,0,:]
+for i in range(1, num_particles):
+    pos = np.concatenate((pos, Xs[:,i,:]), axis=0)
+histogram_2d(pos)
