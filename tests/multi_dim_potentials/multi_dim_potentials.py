@@ -40,14 +40,14 @@ def force(X, A, M, S, beta=1.0):
 sqrt_2pi = 1/sqrt(2*pi)
 sqrt2 = sqrt(2)
 
-num_particles = 100
+num_particles = 1
 num_dim = 2
-num_steps = 1000
+num_steps = 10000
 num_gaussians = 2
 
 dt = 0.01
 beta = 1.0
-D = 5.0
+D = 1
 A = D*beta*dt
 B = np.sqrt(2*D*dt)
 
@@ -98,8 +98,6 @@ def histogram(xmin=-5, xmax=5, dx=0.1, t0=0):
     for b, h, e in zip(bins, hist, expectation):
         print(b, h, e)
 
-# TODO: Implement a 2D histogram?
-
 def two_dim_potential():
     Amp = np.array([[1, 1, 1],
                     [1, 0, 1]])
@@ -115,6 +113,11 @@ def histogram_2d(data, xrange=(-10, 10), yrange=(-10, 10), dx=0.5, dy=0.5):
     hist, xedges, yedges = np.histogram2d(data[:,0], data[:,1], bins=(xbins, ybins))
     for row in hist:
         print(' '.join(map(str, row)))
+
+def single_trajectory():
+    for t, x in enumerate(Xs[:,0,:]):
+        print(t, ' '.join(map(str, x)))
+
 
 """
 SIMULATION
@@ -135,8 +138,9 @@ def main_sim():
 
 Amp, Mu, Sig = two_dim_potential()
 main_sim()
+single_trajectory()
 
-pos = Xs[:,0,:]
-for i in range(1, num_particles):
-    pos = np.concatenate((pos, Xs[:,i,:]), axis=0)
-histogram_2d(pos)
+#pos = Xs[:,0,:]
+#for i in range(1, num_particles):
+#    pos = np.concatenate((pos, Xs[:,i,:]), axis=0)
+#histogram_2d(pos)
