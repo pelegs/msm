@@ -40,14 +40,16 @@ def force(X, A, M, S, beta=1.0):
 sqrt_2pi = 1/sqrt(2*pi)
 sqrt2 = sqrt(2)
 
-num_particles = 50
-num_dim = 2
-num_steps = 10000
+sim_name = '1D_double_well'
+
+num_particles = 1
+num_dim = 1
+num_steps = 100000
 num_gaussians = 2
 
 dt = 0.01
 beta = 1.0
-D = 1
+D = 5
 A = D*beta*dt
 B = np.sqrt(2*D*dt)
 
@@ -55,7 +57,6 @@ Amp = np.ones(shape=(num_dim, num_gaussians))
 Mu = np.zeros(shape=(num_dim, num_gaussians))
 Sig = np.ones(shape=(num_dim, num_gaussians))
 Xs = np.random.uniform(-10, 10, size=(num_steps, num_particles, num_dim))
-
 
 """
 Sanity checks
@@ -68,15 +69,17 @@ def linear_regression():
     mean = np.mean(pos, axis=1)
     var = np.var(pos, axis=1)
     slope, intercept, r_value, p_value, std_err = linregress(ts, var)
-    print('var: y={:0.3f} (2Ddt={:0.3f}) + {:0.3f}, r^2={:0.3f}'.format(slope, 2*D*dt, intercept, r_value))
+    return 'var: y={:0.3f} (2Ddt={:0.3f}) + {:0.3f}, r^2={:0.3f}'.format(slope, 2*D*dt, intercept, r_value)
 
 def mean_var():
     # Mean and Variance check (e.g. for Ornstein-Uhlenbeck process)
     stderr.write('beta = {}, 1/beta = {}, D = {}, 1/D = {}, beta*D = {}, 1/(beta*D)={}\n'.format(beta, 1/beta, D, 1/D, beta*D, 1/(beta*D)))
     mean = np.mean(Xs[:,0,:], axis=1)
     var = np.var(Xs[:,0,:], axis=1)
+    out = '# mean and variance\n'
     for t, m, v in zip(range(num_steps), mean, var):
-        print(t, m, v)
+        out += '{} {} {}\n'.format(t, m, v)
+    return out
 
 def single_indefinite_integral(x, m, s):
     return erf((m-x)/(sqrt2*s)) / 2
@@ -95,28 +98,34 @@ def histogram(xmin=-5, xmax=5, dx=0.1, t0=0):
     hist, _ = np.histogram(pos, bins)
     N = num_steps * num_dim * num_particles * frac
     expectation = [integral(bins[i+1], bins[i], [-3, 3], [1, 1], N) for i, b in enumerate(bins[:-1])]
+    out = '# 1-D histrogram in x=({},{}), with dx={}\n'.format(xmin, xmax, dx)
     for b, h, e in zip(bins, hist, expectation):
-        print(b, h, e)
+        out += '{} {} {}\n'.format(b, h, e)
+    return out
 
 def two_dim_potential():
-    Amp = np.array([[1, 1, 1],
-                    [1, 1, 0]])
-    Mu = np.array([[-6, 0, 6],
-                   [-5, 5, 0]])
+    Amp = np.array([[1, 1, 0],
+                    [0, 0, 0]])
+    Mu = np.array([[-3, 3, 0],
+                   [0, 0, 0]])
     Sig = np.array([[1, 1, 1],
-                    [2, 2, 1]])
+                    [1, 1, 1]])
     return Amp, Mu, Sig
 
 def histogram_2d(data, xrange=(-10, 10), yrange=(-10, 10), dx=0.25, dy=0.25):
     xbins = np.arange(xrange[0], xrange[1], dx)
     ybins = np.arange(yrange[0], yrange[1], dy)
     hist, xedges, yedges = np.histogram2d(data[:,0], data[:,1], bins=(xbins, ybins))
+    out = '# 2-D histogram, for x={}, dx={}; y={}, dy={}\n'.format(xrange, dx, yrange, dy)
     for row in hist:
-        print(' '.join(map(str, row)))
+        out += ' '.join(map(str, row)) + '\n'
+    return out
 
 def single_trajectory():
+    out = '# Single trajectory\n'
     for t, x in enumerate(Xs[:,0,:]):
-        print(t, ' '.join(map(str, x)))
+        out += '{} {}\n'.format(t, ' '.join(map(str, x)))
+    return out
 
 
 """
@@ -129,19 +138,17 @@ def main_sim():
             noise = B*np.random.normal(size=num_dim)
             Xs[t,p,:] = Xs[t-1,p,:] + drift + noise
 
-            ## Check Force vs. Position
-            #forces = force(Xs[t-1,p,:], Amp, Mu, Sig, beta)
-            #for x, F in zip(Xs[t-1,p,:], forces):
-            #    print(x, F, end=' ')
-            #print('')
-
 
 Amp, Mu, Sig = two_dim_potential()
 main_sim()
+output = single_trajectory()
 
-#single_trajectory()
+with open('../data/{}.data'.format(sim_name), 'w') as f:
+    f.write(output)
 
+"""
 pos = Xs[:,0,:]
 for i in range(1, num_particles):
     pos = np.concatenate((pos, Xs[:,i,:]), axis=0)
 histogram_2d(pos)
+"""
