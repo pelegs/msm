@@ -40,12 +40,12 @@ def force(X, A, M, S, beta=1.0):
 sqrt_2pi = 1/sqrt(2*pi)
 sqrt2 = sqrt(2)
 
-sim_name = '1D_double_well'
+sim_name = '2D_double_well'
 
 num_particles = 1
-num_dim = 1
+num_dim = 2
 num_steps = 100000
-num_gaussians = 2
+num_gaussians = 3
 
 dt = 0.01
 beta = 1.0
@@ -104,12 +104,12 @@ def histogram(xmin=-5, xmax=5, dx=0.1, t0=0):
     return out
 
 def two_dim_potential():
-    Amp = np.array([[1, 1, 0],
-                    [0, 0, 0]])
-    Mu = np.array([[-3, 3, 0],
-                   [0, 0, 0]])
-    Sig = np.array([[1, 1, 1],
-                    [1, 1, 1]])
+    Amp = np.array([[1, 0, 0],
+                    [1, 1, 0]])
+    Mu = np.array([[0, 0, 0],
+                   [-3, 3, 0]])
+    Sig = np.array([[2.5, 1, 1],
+                    [0.75, 0.75, 1]])
     return Amp, Mu, Sig
 
 def histogram_2d(data, xrange=(-10, 10), yrange=(-10, 10), dx=0.25, dy=0.25):
@@ -124,8 +124,11 @@ def histogram_2d(data, xrange=(-10, 10), yrange=(-10, 10), dx=0.25, dy=0.25):
 def single_trajectory():
     out = '# Single trajectory\n'
     for t, x in enumerate(Xs[:,0,:]):
-        out += '{} {}\n'.format(t, ' '.join(map(str, x)))
+        out += '{}\n'.format(t, ' '.join(map(str, x)))
     return out
+
+def save_single_trajectory_np():
+    np.save('../data/{}'.format(sim_name), Xs[:,0,:])
 
 
 """
@@ -140,13 +143,14 @@ def main_sim():
 
 
 Amp, Mu, Sig = two_dim_potential()
+Xs[0, 0] = 0, 0
 main_sim()
-output = single_trajectory()
+save_single_trajectory_np()
 
+"""
 with open('../data/{}.data'.format(sim_name), 'w') as f:
     f.write(output)
 
-"""
 pos = Xs[:,0,:]
 for i in range(1, num_particles):
     pos = np.concatenate((pos, Xs[:,i,:]), axis=0)
