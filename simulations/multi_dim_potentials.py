@@ -1,51 +1,47 @@
 #!/usr/bin/env python3
 
-"""
-Example for parameters:
-Amp = np.array([[1, 1],
-                [1, 1, 1],
-                [1, 1]])
-Mu  = np.array([[-5, 5],
-                [-3, 0, 3],
-                [-4, 4]])
-Sig = np.array([[1, 1],
-                [1, 1, 1],
-                [1, 1]])
-"""
-
 import numpy as np
 from numpy import exp, sqrt, pi, log
+sqrt2pi = 1/sqrt(2*pi)
 from scipy.special import erf
 from tqdm import tqdm
 from scipy.stats import linregress
 from sys import stderr
 
 
-def gauss(x, a, m, s):
-    return a * sqrt_2pi/s * exp(-(x-m)**2/(2*s**2))
+def gaussian(x, a, m, s):
+    return a * sqrt2pi/s * exp(-(x-m)**2/(2*s**2))
 
-def gauss_force_dim(x, A, M, S, beta=1.0):
-    dg = np.sum([(m-x)/s**2*gauss(x, a, m, s) for a, m, s in zip(A, M, S)])
-    g  = np.sum([gauss(x, a, m, s) for a, m, s in zip(A, M, S)])
-    if g == 0:
-        return 0
-    else:
-        return beta * dg/g
+class potential:
+    def __init__(self, A, M, S):
+        self.dim = M.shape[1]
+        self.num_gaussians = M.shape[0]
+        self.A = A
+        self.M = M
+        self.S = S
 
-def force(X, A, M, S, beta=1.0):
-    return np.array([gauss_force_dim(x, a, m, s)
-                     for x, a, m, s in zip(X, A, M, S)])
+    def force(self, pos):
+        F = np.zeros(self.dim)
+        for d, _ in enumerate(F):
+            nom = np.sum([(self.M[i,d]-pos[d])/self.S[i,d]**2 * np.prod([gaussian(pos[j], self.A[i,j], self.M[i,j], self.S[i,j]) for j in range(self.dim)])
+                          for i in range(self.num_gaussians)])
+            den = np.sum([np.prod([gaussian(pos[j], self.A[i,j], self.M[i,j], self.S[i,j]) for j in range(self.dim)])
+                          for i in range(self.num_gaussians)])
+            if den != 0:
+                F[d] = nom / den
+        return F
+
+    def potential(self, pos):
+        return -log(np.sum([np.prod([gaussian(pos[j], self.A[i,j], self.M[i,j], self.S[i,j]) for j in range(self.dim)])
+                          for i in range(self.num_gaussians)]))
 
 
-sqrt_2pi = 1/sqrt(2*pi)
-sqrt2 = sqrt(2)
-
-sim_name = '2D_double_well'
+sim_name = '2D_multi_well'
 
 num_particles = 1
 num_dim = 2
-num_steps = 100000
-num_gaussians = 3
+num_steps = 300000
+num_gaussians = 10
 
 dt = 0.01
 beta = 1.0
@@ -104,13 +100,50 @@ def histogram(xmin=-5, xmax=5, dx=0.1, t0=0):
     return out
 
 def two_dim_potential():
-    Amp = np.array([[1, 0, 0],
-                    [1, 1, 0]])
-    Mu = np.array([[0, 0, 0],
-                   [-3, 3, 0]])
-    Sig = np.array([[2.5, 1, 1],
-                    [0.75, 0.75, 1]])
-    return Amp, Mu, Sig
+    Amp = np.array([[1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1]])
+    Mu  = np.array([[-3, -3],
+                    [-3, -2],
+                    [-3, -1],
+                    [-2, -3],
+                    [-2, -1],
+                    [2, 2],
+                    [2, 3],
+                    [3, 2],
+                    [-5, 5],
+                    [-5, 4],
+                    [-5, 6],
+                    [-6, 5],
+                    [-4, 4],
+                    [-4, 5]])
+    Sig = np.array([[1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1],
+                    [1, 1]])
+    U = potential(Amp, Mu, Sig)
+    return U
 
 def histogram_2d(data, xrange=(-10, 10), yrange=(-10, 10), dx=0.25, dy=0.25):
     xbins = np.arange(xrange[0], xrange[1], dx)
@@ -137,12 +170,12 @@ SIMULATION
 def main_sim():
     for t in tqdm(range(1, num_steps)):
         for p in range(num_particles):
-            drift = A*force(Xs[t-1,p,:], Amp, Mu, Sig, beta)
+            drift = A*U.force(Xs[t-1,p,:])
             noise = B*np.random.normal(size=num_dim)
             Xs[t,p,:] = Xs[t-1,p,:] + drift + noise
 
 
-Amp, Mu, Sig = two_dim_potential()
+U = two_dim_potential()
 Xs[0, 0] = 0, 0
 main_sim()
 save_single_trajectory_np()

@@ -1,0 +1,86 @@
+[BUS]
+bus_num = 1
+io_expander_addr = 0x20
+multiplexer_addr1 = 0x74
+multiplexer_addr2 = 0x75
+multiplexer_groups = m2,m1,m1,m2,m1,m2,m2,m1,m2,m1,m2,m1,m1
+multiplexer_channels = 0x20,0x40,0x10,0x10,0x20,0x40,0x04,0x8,0x01,0x02,0x80,0x80,0x01
+DAC_addr = 0x4C
+
+[LEDS]
+max_led_intensity = 4095
+main_led_gain = 2
+a1_addr = 0x40
+a2_addr = 0x41
+b1_addr = 0x50
+b2_addr = 0x51
+main_led_channels = 3,0,2,2,1,1,0,0,2,2,1,1,0
+main_led_groups = B1,B1,B2,B1,B2,B1,A1,B2,A1,A2,A1,A2,A2
+status_led_address = 0x40
+status_led_channels = 6,7,4,5
+helper_led_channel = 15
+pwm_freq = 5000
+I2mWd = 0.55864,0.55841,0.56,0.558686,0.517543,0.559029,0.528571,0.554000,0.554857,0.548308,0.530462,0.525538,0.525846
+I2mW = 0.818,0.611,0.636,0.738,0.601,0.826,0.658,0.680,0.740,0.651,0.661,0.692,0.763
+status_led_colors = green,red,yellow,orange
+status_led_start_script = 0123:25,4:25,0123:25,4:25,0123:25,4:25,0123:25,4:75,0123:25,4:25,0123:25,4:75
+status_led_end_script = 0123:75,4:25,0123:25,4:25,0123:25,4:25,0123:25,4:75,0123:75,4:25,0123:25,4:25,0123:75,4:25,0123:75,4:75,0123:25,4:75
+
+[DAC]
+dac_m = 0.0105
+dac_b = 0.8259
+
+[SENSORS]
+bme_address = 0x77
+bme_calibration_time = 1
+tcs_address = 0x29
+a_coeffs = 0.188353,0.022909,0.145145,0.063525,0.051542,0.034380,0.172178,0.022329,0.049760,3.817674,1.938369,0.065207,0.082093
+b_coeffs = 32.283729,4.920895,25.805828,10.979501,9.109298,6.011821,36.280582,4.093454,8.290137,682.946745,355.717421,16.534549,15.705878
+num_measurements = 10
+
+[TIME]
+start_delay = 10
+misfire_grace = 10
+
+[USERS]
+users = YW,IB
+
+[GUI]
+size_x = 800
+size_y = 400
+margin_top = 10
+margin_bottom = 10
+margin_left = 3
+margin_right = 3
+
+[BUTTONS]
+lib = data/media/buttons
+cell_button_icons = button_free.png,button_selected.png,button_used.png
+new_icon = button_new.png
+pause_icon = button_pause.png
+stop_icon = button_stop.png
+continue_icon = button_continue.png
+exit_icon = button_exit.png
+about_icon = button_about.png
+start_icon = button_start.png
+cancel_icon = button_cancel.png
+back_icon = button_back.png
+stop_icon_rev = button_stop_rev.png
+finish_icon = button_finish.png
+close_tab_icon = button_close_tab.png
+io_toggle_off = io_toggle_off.png
+io_toggle_on = io_toggle_on.png
+exit_icon_green = button_exit_green.png
+back_icon_blue = button_back_blue.png
+
+[IMAGES]
+lib = data/media/pics
+pause = pause_img.png
+warning = warning_sign.png
+warning_single = warning_sign_single.png
+exit_prompt = exit_prompt.png
+light_img = cell_light.png 
+dark_img = cell_dark.png 
+lid_open_img = lid_open_img.png
+about_img = about_img.png
+exp_prep_img = exp_prep_img.png
