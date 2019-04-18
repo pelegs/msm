@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import numpy as np
 from numpy import exp, sqrt, pi, log
 sqrt2pi = 1/sqrt(2*pi)
@@ -64,43 +62,31 @@ def load_data(config_file):
         Sig[i] = [float(x) for x in g['Sig'].split(',')]
     U = potential(Amp, Mu, Sig)
 
-    return name, num_steps, num_dim, beta, Ddt, x0, U
-
-def two_dim_potential():
-    U = potential(Amp, Mu, Sig)
-    return U
-
-
-def single_trajectory():
-    out = '# Single trajectory\n'
-    for t, x in enumerate(Xs[:,:]):
-        out += '{}\n'.format(t, ' '.join(map(str, x)))
-    return out
+    return {
+            'name': name,
+            'num_steps': num_steps,
+            'num_dim': num_dim,
+            'beta': beta,
+            'Ddt': Ddt,
+            'x0': x0,
+            'potential': U
+            }
 
 
-def save_trajectory_np(sim_name):
+def save_trajectory_np(sim_name, Xs):
     np.save('../data/{}'.format(sim_name), Xs[:,:])
 
 
-def main_sim(U, Xs):
+def simulate(params):
+    num_steps = params['num_steps']
+    num_dim = params['num_dim']
+    A = params['beta'] * params['Ddt']
+    B = np.sqrt(2*params['Ddt'])
+    U = params['potential']
+    Xs = np.zeros(shape=(num_steps, num_dim))
+    Xs[0] = params['x0']
     for t in tqdm(range(1, num_steps)):
         drift = A*U.force(Xs[t-1,:])
         noise = B*np.random.normal(size=num_dim)
         Xs[t,:] = Xs[t-1,:] + drift + noise
-
     return Xs
-
-"""
-SET PARAMS AND VARS
-"""
-name, num_steps, num_dim, beta, Ddt, x0, U = load_data(sys.argv[1])
-A = beta*Ddt
-B = np.sqrt(2*Ddt)
-Xs = np.zeros(shape=(num_steps, num_dim))
-Xs[0,0] = x0
-
-"""
-SIMULATION
-"""
-Xs = main_sim(U, Xs)
-save_trajectory_np(name)
