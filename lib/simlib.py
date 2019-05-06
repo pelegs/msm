@@ -26,7 +26,7 @@ class gaussian():
         a = self.A[dim]
         m = self.M[dim]
         s = self.S[dim]
-        return (m-x)/s**2 * self.get_1d_value(x, dim)
+        return (x-m)/s**2 * self.get_1d_value(x, dim)
 
     def get_value(self, pos):
         return np.prod([self.get_1d_value(x, i) for i, x in enumerate(pos)])
@@ -45,10 +45,10 @@ class potential:
 
     def get_force(self, pos):
         const = self.beta / np.sum([g.get_value(pos)
-                                    g in self.gaussians])
-        force = np.array(np.sum([g.get_1d_derivative(pos[d], d)
-                                 for g in self.gaussians
-                                 for d in self.num_dims]))
+                                    for g in self.gaussians])
+        force = const * np.array(np.sum([g.get_1d_derivative(pos[d], d)
+                                         for g in self.gaussians
+                                         for d in range(self.num_dims)]))
         return force
 
 
