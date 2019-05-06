@@ -6,32 +6,50 @@ import configparser
 import sys
 
 
-def gaussian(x, a, m, s):
-    return a * sqrt2pi/s * exp(-(x-m)**2/(2*s**2))
-
-
-class potential:
+class gaussian():
     def __init__(self, A, M, S):
-        self.dim = M.shape[1]
-        self.num_gaussians = M.shape[0]
+        if not A.shape == M.shape == S.shape:
+            raise ValueError('Amplitude, Mean and Varience must have the same shape.')
+            return
         self.A = A
         self.M = M
         self.S = S
+        self.dim = A.shape[0]
 
-    def force(self, pos):
-        F = np.zeros(self.dim)
-        for d, _ in enumerate(F):
-            nom = np.sum([(self.M[i,d]-pos[d])/self.S[i,d]**2 * np.prod([gaussian(pos[j], self.A[i,j], self.M[i,j], self.S[i,j]) for j in range(self.dim)])
-                          for i in range(self.num_gaussians)])
-            den = np.sum([np.prod([gaussian(pos[j], self.A[i,j], self.M[i,j], self.S[i,j]) for j in range(self.dim)])
-                          for i in range(self.num_gaussians)])
-            if den != 0:
-                F[d] = nom / den
-        return F
+    def get_1d_value(self, x, dim):
+        a = self.A[dim]
+        m = self.M[dim]
+        s = self.S[dim]
+        return a * sqrt2pi/s * exp(-(x-m)**2/(2*s**2))
 
-    def potential(self, pos):
-        return -log(np.sum([np.prod([gaussian(pos[j], self.A[i,j], self.M[i,j], self.S[i,j]) for j in range(self.dim)])
-                          for i in range(self.num_gaussians)]))
+    def get_1d_derivative(self, x, dim):
+        a = self.A[dim]
+        m = self.M[dim]
+        s = self.S[dim]
+        return (m-x)/s**2 * self.get_1d_value(x, dim)
+
+    def get_value(self, pos):
+        return np.prod([self.get_1d_value(x, i) for i, x in enumerate(pos)])
+
+
+class potential:
+    def __init__(self, gaussians, beta=1):
+        self.gaussians = gaussians
+        self.beta = beta
+        self.num_dims = np.max([g.dim
+                                for g in self.gaussians])
+
+    def get_value(self, pos):
+        val = np.sum([g.get_value(pos) for g in self.gaussians])
+        return -self.beta * np.log(val)
+
+    def get_force(self, pos):
+        const = self.beta / np.sum([g.get_value(pos)
+                                    g in self.gaussians])
+        force = np.array(np.sum([g.get_1d_derivative(pos[d], d)
+                                 for g in self.gaussians
+                                 for d in self.num_dims]))
+        return force
 
 
 def load_data(config_file):
