@@ -28,6 +28,12 @@ class gaussian():
         s = self.S[dim]
         return (m-x)/s**2 * self.get_1d_value(x, dim)
 
+    def get_partial_derivative(self, pos, dim):
+        a = self.A[dim]
+        m = self.M[dim]
+        s = self.S[dim]
+        return (m-pos[dim])/s**2 * self.get_value(pos)
+
     def get_value(self, pos):
         return np.prod([self.get_1d_value(x, i) for i, x in enumerate(pos)])
 
@@ -44,14 +50,14 @@ class potential:
         return -self.beta * np.log(val)
 
     def get_force(self, pos):
-        const = self.beta / np.sum([g.get_value(pos)
-                                    for g in self.gaussians])
+        norm_factor = self.beta / np.sum([g.get_value(pos)
+                                          for g in self.gaussians])
         force = np.zeros(self.num_dims)
         for d in range(self.num_dims):
             force[d] = pos[d]
-            force[d] = np.sum([g.get_1d_derivative(pos[d], d)
+            force[d] = np.sum([g.get_partial_derivative(pos, d)
                                for g in self.gaussians])
-        return self.beta * const * force
+        return self.beta * norm_factor * force
 
 def load_data(config_file):
     # Load configurations
