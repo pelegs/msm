@@ -39,27 +39,27 @@ class gaussian():
 
 
 class potential:
-    def __init__(self, gaussians, beta=1):
+    def __init__(self, gaussians, KBT=1):
         self.gaussians = gaussians
-        self.inv_beta = 1/float(beta)
         self.num_dims = np.max([g.dim
                                 for g in self.gaussians])
+        self.KBT = KBT
         # Only relevant for one, 1D gaussian
-        self.k = 1.0 / (beta*self.gaussians[0].S[0]**2)
+        self.k = KBT / self.gaussians[0].S[0]**2
 
     def get_value(self, pos):
         val = np.sum([g.get_value(pos) for g in self.gaussians])
-        return -self.beta * np.log(val)
+        return -self.KBT * np.log(val)
 
     def get_force(self, pos):
         # TODO: This needs to be properly vectorized
-        norm_factor = self.beta / np.sum([g.get_value(pos)
-                                          for g in self.gaussians])
+        norm_factor = self.KBT / np.sum([g.get_value(pos)
+                                         for g in self.gaussians])
         force = np.zeros(self.num_dims)
         for d in range(self.num_dims):
             force[d] = np.sum([g.get_partial_derivative(pos, d)
                                for g in self.gaussians])
-        return self.inv_beta * norm_factor * force
+        return self.KBT * norm_factor * force
 
 
 def load_data(config_file):
@@ -109,7 +109,7 @@ def simulate(params):
     num_steps = params['num_steps']
     num_dim = params['num_dim']
     num_particles = params['num_particles']
-    A = params['beta'] * params['Ddt']
+    A = params['Ddt'] / params['KBT']
     B = np.sqrt(2*params['Ddt'])
     U = params['potential']
     Xs = np.zeros(shape=(num_steps, num_dim, num_particles))
