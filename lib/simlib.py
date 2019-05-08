@@ -111,7 +111,7 @@ def simulate(params):
     Xs = np.zeros(shape=(num_steps, num_dim))
     Xs[0] = params['x0']
     for t in tqdm(range(1, num_steps)):
-        drift = A*U.force(Xs[t-1,:])
-        noise = B*np.random.normal(size=num_dim)
+        drift = A * U.get_force(Xs[t-1,:])
+        noise = B * np.random.normal(size=num_dim)
         Xs[t,:] = Xs[t-1,:] + drift + noise
     return Xs
