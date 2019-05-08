@@ -41,11 +41,11 @@ class gaussian():
 class potential:
     def __init__(self, gaussians, beta=1):
         self.gaussians = gaussians
-        self.beta = beta
+        self.inv_beta = 1/float(beta)
         self.num_dims = np.max([g.dim
                                 for g in self.gaussians])
         # Only relevant for one, 1D gaussian
-        self.k = self.beta / self.gaussians[0].S[0]**2
+        self.k = 1.0 / (beta*self.gaussians[0].S[0]**2)
 
     def get_value(self, pos):
         val = np.sum([g.get_value(pos) for g in self.gaussians])
@@ -59,7 +59,7 @@ class potential:
         for d in range(self.num_dims):
             force[d] = np.sum([g.get_partial_derivative(pos, d)
                                for g in self.gaussians])
-        return self.beta * norm_factor * force
+        return self.inv_beta * norm_factor * force
 
 
 def load_data(config_file):
