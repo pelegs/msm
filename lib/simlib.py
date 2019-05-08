@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import exp, sqrt, pi, log
 sqrt2pi = 1/sqrt(2*pi)
-from tqdm import tqdm
+from tqdm import tqdm_notebook as tqdm
 import configparser
 import sys
 
@@ -44,20 +44,23 @@ class potential:
         self.beta = beta
         self.num_dims = np.max([g.dim
                                 for g in self.gaussians])
+        # Only relevant for one, 1D gaussian
+        self.k = self.beta / self.gaussians[0].S[0]**2
 
     def get_value(self, pos):
         val = np.sum([g.get_value(pos) for g in self.gaussians])
         return -self.beta * np.log(val)
 
     def get_force(self, pos):
+        # TODO: This needs to be properly vectorized
         norm_factor = self.beta / np.sum([g.get_value(pos)
                                           for g in self.gaussians])
         force = np.zeros(self.num_dims)
         for d in range(self.num_dims):
-            force[d] = pos[d]
             force[d] = np.sum([g.get_partial_derivative(pos, d)
                                for g in self.gaussians])
         return self.beta * norm_factor * force
+
 
 def load_data(config_file):
     # Load configurations
@@ -105,13 +108,16 @@ def save_trajectory_np(sim_name, Xs):
 def simulate(params):
     num_steps = params['num_steps']
     num_dim = params['num_dim']
+    num_particles = params['num_particles']
     A = params['beta'] * params['Ddt']
     B = np.sqrt(2*params['Ddt'])
     U = params['potential']
-    Xs = np.zeros(shape=(num_steps, num_dim))
-    Xs[0] = params['x0']
+    Xs = np.zeros(shape=(num_steps, num_dim, num_particles))
+    Xs[0,:,:] = params['x0']
     for t in tqdm(range(1, num_steps)):
-        drift = A * U.get_force(Xs[t-1,:])
-        noise = B * np.random.normal(size=num_dim)
-        Xs[t,:] = Xs[t-1,:] + drift + noise
+        drift = np.zeros(shape=(num_dim, num_particles))
+        for i in range(num_particles):
+            drift[:,i] = A * U.get_force(Xs[t-1,:,i])
+        noise = B * np.random.normal(size=(num_dim, num_particles))
+        Xs[t,:,:] = Xs[t-1,:,:] + drift + noise
     return Xs
