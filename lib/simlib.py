@@ -59,7 +59,7 @@ class potential:
         for d in range(self.num_dims):
             force[d] = np.sum([g.get_partial_derivative(pos, d)
                                for g in self.gaussians])
-        return self.KBT * norm_factor * force
+        return norm_factor * force
 
 
 def load_data(config_file):
