@@ -121,3 +121,45 @@ def simulate(params):
         noise = B * np.random.normal(size=(num_dim, num_particles))
         Xs[t,:,:] = Xs[t-1,:,:] + drift + noise
     return Xs
+
+
+def simulate_equilibrium(params, binwidth,
+                         equib_test=1000,
+                         bound=0.99,
+                         min_steps=10000,
+                         max_steps=500000):
+    """
+    NOTE: At the moment only checks for the case
+          of symmetric 1D double well and one particle.
+    """
+    num_steps = params['num_steps']
+    num_dim = params['num_dim']
+    A = params['Ddt'] / params['KBT']
+    B = np.sqrt(2*params['Ddt'])
+    U = params['potential']
+    Xs = np.ones((1, 1)) * params['x0']
+    x_neg = params['potential'].gaussians[0].M[0]
+    x_pos = params['potential'].gaussians[1].M[0]
+    bins = np.array([x_neg-binwidth, 0.0, x_pos+binwidth])
+    bottom = bound
+    top = 1.0/bound
+    run = True
+    t = 0
+    while run and t < max_steps:
+        t += 1
+        drift = A * U.get_force(Xs[t-1])
+        noise = B * np.random.normal()
+        Xs_next = Xs[t-1] + drift + noise
+        Xs = np.vstack((Xs, Xs_next))
+        # Check equilibrium
+        if t % equib_test == 0 and t >= min_steps:
+            hist, _ = np.histogram(Xs.flatten(), bins)
+            perc = float(hist[0]) / float(hist[1])
+            if bottom <= perc <= top:
+                run = False
+            else:
+                print('\r{} {} {:0.2f}'.format(t, hist, perc), end='')
+        elif t < min_steps:
+            print('\r{}   '.format(t), end='')
+    print('')
+    return Xs.flatten()
