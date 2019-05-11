@@ -163,3 +163,30 @@ def simulate_equilibrium(params, binwidth,
             print('\r{}   '.format(t), end='')
     print('')
     return Xs.flatten()
+
+
+def simulate_transitions(params, num_trans=100):
+    """
+    NOTE: At the moment only checks for the case
+          of symmetric 1D double well and one particle.
+    """
+    num_steps = params['num_steps']
+    num_dim = params['num_dim']
+    A = params['Ddt'] / params['KBT']
+    B = np.sqrt(2*params['Ddt'])
+    U = params['potential']
+    Xs = np.ones((1, 1)) * params['x0']
+    run = True
+    t = 0
+    transitions = 0
+    while run and transitions < num_trans:
+        t += 1
+        drift = A * U.get_force(Xs[t-1])
+        noise = B * np.random.normal()
+        Xs_next = Xs[t-1] + drift + noise
+        Xs = np.vstack((Xs, Xs_next))
+        if np.sign(Xs[t-1]) != np.sign(Xs[t]):
+            transitions += 1
+            print('\r{}, t={}'.format(transitions, t), end='')
+    print('')
+    return Xs.flatten()
