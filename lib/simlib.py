@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import exp, sqrt, pi, log
 sqrt2pi = 1/sqrt(2*pi)
-from tqdm import tqdm_notebook as tqdm
+from tqdm import tqdm_notebook, tqdm
 import configparser
 import sys
 
@@ -115,6 +115,24 @@ def simulate(params):
     Xs = np.zeros(shape=(num_steps, num_dim, num_particles))
     Xs[0,:,:] = params['x0']
     for t in tqdm(range(1, num_steps)):
+        drift = np.zeros(shape=(num_dim, num_particles))
+        for i in range(num_particles):
+            drift[:,i] = A * U.get_force(Xs[t-1,:,i])
+        noise = B * np.random.normal(size=(num_dim, num_particles))
+        Xs[t,:,:] = Xs[t-1,:,:] + drift + noise
+    return Xs
+
+
+def simulate_notebook(params):
+    num_steps = params['num_steps']
+    num_dim = params['num_dim']
+    num_particles = params['num_particles']
+    A = params['Ddt'] / params['KBT']
+    B = np.sqrt(2*params['Ddt'])
+    U = params['potential']
+    Xs = np.zeros(shape=(num_steps, num_dim, num_particles))
+    Xs[0,:,:] = params['x0']
+    for t in tqdm_notebook(range(1, num_steps)):
         drift = np.zeros(shape=(num_dim, num_particles))
         for i in range(num_particles):
             drift[:,i] = A * U.get_force(Xs[t-1,:,i])
