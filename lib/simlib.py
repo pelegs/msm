@@ -61,6 +61,15 @@ class potential:
                                for g in self.gaussians])
         return norm_factor * force
 
+    def get_second_derivative(self, x):
+        # NOTE: Currently only for 1D case with two
+        #       symmetric wells
+        m = self.gaussians[0].M[0]
+        s = self.gaussians[0].S[0]
+        num = s**2*exp(4*m*x/s**2) + (2*s**2-4*m**2)*exp(2*m*x/s**2) + s**2
+        den = s**4*(exp(2*m*x/s**2)+1)**2
+        return num/den
+
 
 def load_data(config_file):
     # Load configurations
@@ -188,6 +197,7 @@ def simulate_transitions(params, num_trans=100, trans_dim=0):
     NOTE: At the moment only checks for the case
           of symmetric 1D double well and one particle.
     """
+    m = params['potential'].gaussians[1].M[0]
     num_steps = params['num_steps']
     num_dim = params['num_dim']
     A = params['Ddt'] / params['KBT']
@@ -204,6 +214,66 @@ def simulate_transitions(params, num_trans=100, trans_dim=0):
         Xs = np.vstack((Xs, Xs_next))
         if np.sign(Xs[t-1,trans_dim]) != np.sign(Xs[t,trans_dim]):
             transitions += 1
-            print('\r{}, t={}'.format(transitions, t), end='')
-    print('')
-    return Xs
+            print('\rm={:0.2f}: {} (of {}), t={}'.format(m, transitions, num_trans, t), end='')
+    mean = float(transitions) / float(t)
+    err_min = (transitions-2) / t * (1 - 1.96/sqrt(transitions))
+    err_max = (transitions-2) / t * (1 + 1.96/sqrt(transitions))
+    return Xs, mean, err_min, err_max
+
+
+def simulate_transitions_1D_no_memory(params, num_trans=100, trans_dim=0):
+    """
+    NOTE: At the moment only checks for the case
+          of symmetric 1D double well and one particle.
+    """
+    m = params['potential'].gaussians[1].M[0]
+    A = params['Ddt'] / params['KBT']
+    B = np.sqrt(2*params['Ddt'])
+    U = params['potential']
+    x0 = params['x0']
+    x = x0
+    t = 0
+    transitions = 0
+    times = [0]
+    while transitions < num_trans:
+        t += 1
+        drift = A * U.get_force(x)
+        noise = B * np.random.normal()
+        x_old = x
+        x = x + drift + noise
+        if np.sign(x) != np.sign(x_old):
+            transitions += 1
+            x = x0
+            times.append(t)
+            print('\rm={:0.2f}: {} (of {}), t={}   '.format(m, transitions, num_trans, t), end='')
+    delta_times = np.diff(times)
+    mean = np.mean(1.0 / delta_times)
+    var = np.var(1.0 / delta_times)
+    #err_min = (transitions-2) / t * (1 - 1.96/sqrt(transitions))
+    #err_max = (transitions-2) / t * (1 + 1.96/sqrt(transitions))
+    return mean, var
+
+
+def simulate_transitions_1D_no_memory_poly(num_trans=100, a=0.1, x0=0):
+    """
+    NOTE: At the moment only checks for the case
+          of symmetric 1D double well and one particle.
+    """
+    A = 0.001
+    B = np.sqrt(2*0.01)
+    x = x0
+    t = 0
+    transitions = 0
+    while transitions < num_trans:
+        t += 1
+        drift = A * (-4*a*x**3 + 2*x)
+        noise = B * np.random.normal()
+        x_old = x
+        x = x + drift + noise
+        if np.sign(x) != np.sign(x_old):
+            transitions += 1
+            print('\ra={:0.2f}: {} (of {}), t={}   '.format(a, transitions, num_trans, t), end='')
+    mean = float(transitions) / float(t)
+    err_min = (transitions-2) / t * (1 - 1.96/sqrt(transitions))
+    err_max = (transitions-2) / t * (1 + 1.96/sqrt(transitions))
+    return mean, err_min, err_max

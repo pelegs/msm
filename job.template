@@ -1,0 +1,27 @@
+#!/bin/bash
+
+source /etc/profile.d/modules.sh             # enables us to use the 'module load' command
+module load shared                           # access to modules in /cm/shared
+
+
+#===============================================================================
+# Definitions for SGE
+#$ -S /bin/bash
+#$ -N jobname
+#$ -M me@gwdg.de
+#$ -m abe
+#$ -l h_rt=24:0:0
+#$ -cwd
+#$ -pe *_fast 1
+# Do not ignore signals:
+#$ -notify
+
+# We install a signal handler for the case that this job in some emergency needs to
+# be terminated (e.g. node or cluster shutdown).
+trap "" TERM
+
+#===============================================================================
+# The following section defines some functions that can be used for convenience
+
+# Report the exit code of any pipeline as the exit code of the last program to return a non-zero exit code:
+set -o pipefail
