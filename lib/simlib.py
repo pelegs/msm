@@ -1,9 +1,15 @@
 import numpy as np
 from numpy import exp, sqrt, pi, log
-sqrt2pi = 1/sqrt(2*pi)
+from scipy.special import erf
+from scipy.stats import rv_continuous
 from tqdm import tqdm_notebook, tqdm
 import configparser
 import sys
+
+sqrt2pi = 1/sqrt(2*pi)
+sp2 = sqrt(pi/2)
+s2p = sqrt(2*pi)
+s2 = sqrt(2)
 
 
 class gaussian():
@@ -20,7 +26,7 @@ class gaussian():
         a = self.A[dim]
         m = self.M[dim]
         s = self.S[dim]
-        return a * sqrt2pi/s * exp(-(x-m)**2/(2*s**2))
+        return a * exp(-(x-m)**2/(2*s**2))
 
     def get_1d_derivative(self, x, dim):
         a = self.A[dim]
@@ -61,53 +67,44 @@ class potential:
                                for g in self.gaussians])
         return norm_factor * force
 
-    def get_second_derivative(self, x):
-        # NOTE: Currently only for 1D case with two
-        #       symmetric wells
-        m = self.gaussians[0].M[0]
-        s = self.gaussians[0].S[0]
-        num = s**2*exp(4*m*x/s**2) + (2*s**2-4*m**2)*exp(2*m*x/s**2) + s**2
-        den = s**4*(exp(2*m*x/s**2)+1)**2
-        return num/den
+    def get_probability(self, x, dim=0):
+        """
+        Returns the probability of finding a particle
+        at position x at equilibrium, using this potential.
+        """
+        norm = s2p * np.sum([gaussian.S[dim]*gaussian.A[dim] for gaussian in self.gaussians])
+        integral = np.sum([gaussian.get_1d_value(x, dim) for gaussian in self.gaussians])
+        return integral / norm
+
+    def integrate_single_dim(self, x1, x2, dim=0, total_steps=1):
+        integral = 0.0
+        for gaussian in self.gaussians:
+            a = gaussian.A[dim]
+            m = gaussian.M[dim]
+            s = gaussian.S[dim]
+            integral += total_steps * a * sp2 * s * (erf((x2-m)/(s2*s)) - erf((x1-m)/(s2*s)))
+        return integral
+
+    def get_theoretical_histogram(self, bins, total_steps=1):
+        return np.array([self.integrate_single_dim(bins[i], bins[i+1], total_steps=total_steps)
+                         for i, _ in enumerate(bins[:-1])])
 
 
-def load_data(config_file):
-    # Load configurations
-    config = configparser.ConfigParser()
-    config.read(config_file)
+def create_starting_positions(potential, num_particles=1000,
+                              xmin=-1, xmax=1):
+    # Generate population
+    population = np.linspace(xmin, xmax, num_particles)
+    probability = np.array([potential.get_probability(x) for x in population])
+    normalized_prob = probability / np.sum(probability)
+    return np.random.choice(population, p=normalized_prob, size=num_particles)
 
-    # Name
-    name = config['NAME']['name']
 
-    # General parameters
-    params = config['PARAMETERS']
-    num_steps = int(params['num_steps'])
-    beta = float(params['beta'])
-    Ddt = float(params['Ddt'])
-    x0 = np.array([float(x) for x in params['x0'].split(',')])
-    num_dim = int(params['num_dim'])
-    num_gaussians = int(params['num_gaussians'])
+class zero_potential(potential):
+    def __init__(self):
+        pass
 
-    # Potential
-    gaussians = [config['GAUSSIAN{}'.format(i)] for i in range(num_gaussians)]
-    Amp = np.zeros(shape=(num_gaussians, num_dim))
-    Mu  = np.zeros(shape=(num_gaussians, num_dim))
-    Sig = np.zeros(shape=(num_gaussians, num_dim))
-    for i, g in enumerate(gaussians):
-        Amp[i] = [float(x) for x in g['Amp'].split(',')]
-        Mu[i]  = [float(x) for x in g['Mu'].split(',')]
-        Sig[i] = [float(x) for x in g['Sig'].split(',')]
-    U = potential(Amp, Mu, Sig)
-
-    return {
-            'name': name,
-            'num_steps': num_steps,
-            'num_dim': num_dim,
-            'beta': beta,
-            'Ddt': Ddt,
-            'x0': x0,
-            'potential': U
-            }
+    def get_force(self, pos):
+        return pos * 0.0
 
 
 def save_trajectory_np(sim_name, Xs):
@@ -123,7 +120,7 @@ def simulate(params):
     U = params['potential']
     Xs = np.zeros(shape=(num_steps, num_dim, num_particles))
     Xs[0,:,:] = params['x0']
-    for t in tqdm(range(1, num_steps)):
+    for t in tqdm_notebook(range(1, num_steps)):
         drift = np.zeros(shape=(num_dim, num_particles))
         for i in range(num_particles):
             drift[:,i] = A * U.get_force(Xs[t-1,:,i])
