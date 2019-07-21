@@ -3,7 +3,7 @@
 source /etc/profile.d/modules.sh
 module load shared
 
-./kramers.py $1 2000 0.001 6
+./kramers.py $1 $2 0.001 6
 
 #$ -S /bin/bash
 #$ -N kramers_parallel
