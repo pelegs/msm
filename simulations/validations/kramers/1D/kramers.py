@@ -10,6 +10,9 @@ import pyemma
 
 # CL arguments
 m_val = float(sys.argv[1])
+maxt = float(sys.argv[2])
+dt = float(sys.argv[3])
+num_clusters = int(sys.argv[4])
 
 # Symbols
 x = symbols('x')
@@ -23,10 +26,6 @@ U = -log(exp(-(x-m)**2/(2*s**2)) + exp(-(x+m)**2/(2*s**2)))
 KT = symbols('k_{B}T')
 Ddt = symbols('Ddt')
 R = symbols('R')
-
-# Other Parameters
-maxt = 2000
-dt = 0.001
 
 # Forces
 F1 = simplify(-diff(U, x))*Ddt/KT
@@ -51,13 +50,12 @@ for i, t in enumerate(tqdm_notebook(ts)):
     xs[i] = xs[i-1] + F_val.subs(x, xs[i-1]).subs(R, rs[i]).evalf()
 
 # Clustering
-print('Clustering)
-k = 6
-cluster = pyemma.coordinates.cluster_kmeans(xs, k=k, max_iter=50)
+print('Clustering')
+cluster = pyemma.coordinates.cluster_kmeans(xs, k=num_clusters, max_iter=50)
 
 # ITS
 print('Calculating ITS')
-its = pyemma.msm.its(cluster.dtrajs, lags=np.linspace(1, 10000, 20).astype(int), nits=1, errors='bayes')
+its = pyemma.msm.its(cluster.dtrajs, lags=np.linspace(1, 10000, 10).astype(int), nits=1, errors='bayes')
 
 # MSM
 LAG = 5000
@@ -68,5 +66,5 @@ sample_conf_l, sample_conf_r = bayesian_msm.sample_conf('timescales', k=1)
 
 # Save data
 with open('data/kr_{:0.2f}.data'.format(m_val), 'w') as f:
-    f.write('{} {} {} {}\n'.format(sample_mean[0]*dt, sample_conf_l[0]*dt, sample_conf_r[0]*dt))
+    f.write('{} {} {} {}\n'.format(m_val, sample_mean[0]*dt, sample_conf_l[0]*dt, sample_conf_r[0]*dt))
 print('Done.')
