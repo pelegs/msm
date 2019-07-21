@@ -4,12 +4,12 @@
 import sys
 import numpy as np
 from sympy import *
+from tqdm import tqdm_notebook
 import pyemma
 
 
-# From CL
+# CL arguments
 m_val = float(sys.argv[1])
-tmax = float(sys.argv[2])
 
 # Symbols
 x = symbols('x')
@@ -25,7 +25,8 @@ Ddt = symbols('Ddt')
 R = symbols('R')
 
 # Other Parameters
-dt = 0.01
+maxt = 2000
+dt = 0.001
 
 # Forces
 F1 = simplify(-diff(U, x))*Ddt/KT
@@ -33,10 +34,10 @@ F2 = sqrt(2*Ddt)*R
 F = F1 + F2
 
 # Substitute Actuall Values into F
-F_val = F.subs(m, m_val).subs(s, 1).subs(KT, 1).subs(Ddt, 0.01)
+F_val = F.subs(m, m_val).subs(s, 1).subs(KT, 1).subs(Ddt, dt)
 
 # Time array
-ts = np.arange(0, tmax, dt)
+ts = np.arange(0, maxt, dt)
 
 # Positions array
 xs = np.zeros(ts.shape[0])
@@ -45,18 +46,27 @@ xs = np.zeros(ts.shape[0])
 rs = np.random.normal(0, 1, size=ts.shape[0])
 
 # Simulation
-for i, t in enumerate(ts):
+print('Simulating')
+for i, t in enumerate(tqdm_notebook(ts)):
     xs[i] = xs[i-1] + F_val.subs(x, xs[i-1]).subs(R, rs[i]).evalf()
 
-# Calculate TS
-cluster_centers = np.array([[-m_val],[m_val]])
-cluster_dtrajs = pyemma.coordinates.assign_to_centers(xs, cluster_centers)
-its = pyemma.msm.its(cluster_dtrajs, lags=np.linspace(1, 5000, 20).astype(int), nits=1, errors='bayes')
-LAG = 600
-bayesian_msm = pyemma.msm.bayesian_markov_model(cluster_dtrajs, lag=LAG, conf=0.95)
+# Clustering
+print('Clustering)
+k = 6
+cluster = pyemma.coordinates.cluster_kmeans(xs, k=k, max_iter=50)
+
+# ITS
+print('Calculating ITS')
+its = pyemma.msm.its(cluster.dtrajs, lags=np.linspace(1, 10000, 20).astype(int), nits=1, errors='bayes')
+
+# MSM
+LAG = 5000
+print('Calculating MSM')
+bayesian_msm = pyemma.msm.bayesian_markov_model(cluster.dtrajs, lag=LAG, conf=0.95)
 sample_mean = bayesian_msm.sample_mean('timescales', k=1)
 sample_conf_l, sample_conf_r = bayesian_msm.sample_conf('timescales', k=1)
 
-# Record data
+# Save data
 with open('data/kr_{:0.2f}.data'.format(m_val), 'w') as f:
-    f.write('{} {} {} {}'.format(m_val, sample_mean[0], sample_conf_l[0], sample_conf_r[0]))
+    f.write('{} {} {} {}\n'.format(sample_mean[0]*dt, sample_conf_l[0]*dt, sample_conf_r[0]*dt))
+print('Done.')
