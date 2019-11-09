@@ -3,10 +3,9 @@
 source /etc/profile.d/modules.sh
 module load shared
 
-./test_2d.py $1 $2 $3 $4
+./st2d_par.py $1 $2 $3 $4 $5 $6
 
 #$ -S /bin/bash
-#$ -N equib_par
 #$ -l h_rt=24:0:0
 #$ -cwd
 #$ -pe *_fast 1

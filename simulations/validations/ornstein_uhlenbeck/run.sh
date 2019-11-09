@@ -3,7 +3,7 @@
 source /etc/profile.d/modules.sh
 module load shared
 
-./test_2d.py $1 $2 $3 $4
+./rmsd.py $1 $2
 
 #$ -S /bin/bash
 #$ -N equib_par

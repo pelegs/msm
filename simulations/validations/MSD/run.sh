@@ -3,10 +3,10 @@
 source /etc/profile.d/modules.sh
 module load shared
 
-./test_2d.py $1 $2 $3 $4
+./MSD.py $1 $2 $3 $4
 
 #$ -S /bin/bash
-#$ -N equib_par
+#$ -N kramers_parallel
 #$ -l h_rt=24:0:0
 #$ -cwd
 #$ -pe *_fast 1
