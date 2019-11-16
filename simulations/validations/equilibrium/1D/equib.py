@@ -12,33 +12,30 @@ name = sys.argv[1]
 id = int(sys.argv[2])
 num_particles = int(sys.argv[3])
 num_steps = int(sys.argv[4])
-t0 = int(sys.argv[5])
-Ddt = float(sys.argv[6])
+Ddt = float(sys.argv[5])
 
 # Other parameters
-xmin, xmax = -6, 6
+xmin, xmax = -5, 5
+#num_bins = 1000
+#tbins = np.linspace(xmin, xmax, num_bins)
 
 U = potential()
 U.load('potentials/{}.pt'.format(name))
 
 # Simulation Parameters
-equilibrated_positions = create_starting_positions(U, num_particles, xmin, xmax)
 parameters = {
     'name': name,
     'num_steps': num_steps,
     'num_dim': 1,
     'num_particles': num_particles,
-    'KBT': 1,
+    'kBT': 1,
     'Ddt': Ddt,
-    'x0': equilibrated_positions,
+    'x0': np.random.uniform(xmin, xmax, num_particles),#create_equilibrium_positions(U, tbins, num_particles),
     'potential': U
 }
 
 # Simulation
 xs = simulate(parameters)
 
-# Truncate
-xs_trunc = xs[t0:].reshape((num_steps-t0, num_particles))
-
 # Save
-np.save('data/equib_1D_{}_id{}.npy'.format(name, id), xs_trunc)
+np.save('data/equib_1D_{}_id{}.npy'.format(name, id), xs)

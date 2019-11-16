@@ -6,11 +6,13 @@ from tqdm import tqdm_notebook, tqdm
 import configparser
 import sys
 import pickle
+import itertools
 
 
 sqrt2pi = sqrt(pi)
 sqrt2 = sqrt(2)
 s2p = sqrt(2*pi)
+s2p_1 = 1.0/s2p
 
 
 class gaussian():
@@ -29,12 +31,6 @@ class gaussian():
         s = self.S[dim]
         return a * exp(-(x-m)**2/(2*s**2))
 
-    def get_1d_derivative(self, x, dim):
-        a = self.A[dim]
-        m = self.M[dim]
-        s = self.S[dim]
-        return (m-x)/s**2 * self.get_1d_value(x, dim)
-
     def get_partial_derivative(self, pos, dim):
         a = self.A[dim]
         m = self.M[dim]
@@ -45,14 +41,14 @@ class gaussian():
         return np.prod([self.get_1d_value(x, i) for i, x in enumerate(pos)])
 
     def integral_1D(self, d, a, b):
-        return 1/s2p * self.A[d]*self.S[d] * (erf((b-self.M[d])/(sqrt2*self.S[d])) - erf((a-self.M[d])/(sqrt2*self.S[d])))
+        return s2p_1 * self.A[d]*self.S[d] * (erf((b-self.M[d])/(sqrt2*self.S[d])) - erf((a-self.M[d])/(sqrt2*self.S[d])))
 
     def integral(self, I):
         return np.prod([self.integral_1D(d, a, b) for d, (a, b) in enumerate(I)])
 
 
 class potential:
-    def __init__(self, gaussians=None, KBT=1):
+    def __init__(self, gaussians=None, kBT=1):
         self.gaussians = gaussians
         if gaussians is not None:
             self.num_dims = np.max([g.dim
@@ -60,15 +56,15 @@ class potential:
             self.num_gaussians = len(gaussians)
         else:
             self.num_gaussians = 0
-        self.KBT = KBT
+        self.kBT = kBT
 
     def get_value(self, pos):
         val = np.sum([g.get_value(pos) for g in self.gaussians])
-        return -self.KBT * np.log(val)
+        return -self.kBT * np.log(val)
 
     def get_force(self, pos):
         # TODO: This needs to be properly vectorized
-        norm_factor = self.KBT / np.sum([g.get_value(pos)
+        norm_factor = self.kBT / np.sum([g.get_value(pos)
                                          for g in self.gaussians])
         force = np.zeros(self.num_dims)
         for d in range(self.num_dims):
@@ -90,10 +86,10 @@ class potential:
             raise ValueError('Number of intervals ({}) is different than number of dimensions ({})!'.format(len(intervals), self.num_dims))
         return np.sum([ig.integral(intervals) for ig in self.gaussians])
 
-    def get_theoretical_histogram(self, dim, bins, num_steps=1000):
-        I = np.array([self.integral_1D(dim, bins[i], bins[i+1]) for i, b in enumerate(bins[:-1])])
-        A = np.sum([g.A[dim]*g.S[dim] for g in self.gaussians])
-        return I/A * num_steps
+    def get_equilibrium_histogram_1D(self, bins, num_steps=1000, dim=0):
+        I = np.array([self.integral([[bins[i], bins[i+1]]]) for i, b in enumerate(bins[:-1])])
+        #A = np.sum([g.A[dim]*g.S[dim] for g in self.gaussians])
+        return I / np.sum(I) * num_steps
 
     def save(self, filename):
         with open(filename, 'wb') as file:
@@ -105,14 +101,16 @@ class potential:
             self.gaussians = new.gaussians
             self.num_dims = np.max([g.dim
                                     for g in self.gaussians])
-            self.KBT = new.KBT
+            self.kBT = new.kBT
 
 
-def create_starting_positions(potential, num_particles=1000,
-                              xmin=-1, xmax=1):
-    # Generate population
-    population = np.linspace(xmin, xmax, num_particles)
-    probability = np.array([potential.get_probability(x) for x in population])
+def create_equilibrium_positions(potential, bins, num_particles=1000):
+    """
+    Generates equilibrated positions according to a 1D potential,
+    bins and number of partciels.
+    """
+    population = bins
+    probability = potential.get_equilibrium_histogram_1D(bins)
     normalized_prob = probability / np.sum(probability)
     return np.random.choice(population, p=normalized_prob, size=num_particles)
 
@@ -135,7 +133,7 @@ def simulate(params, notebook=False):
     num_dim_sqrt = np.sqrt(num_dim)
     num_particles = params['num_particles']
 
-    A = params['Ddt'] / params['KBT']
+    A = params['Ddt'] / params['kBT']
     B = np.sqrt(2*params['Ddt'])
     U = params['potential']
 

@@ -5,47 +5,47 @@ import sys
 sys.path.append('/home/psapir/prog/msm/lib')
 from simlib import *
 import numpy as np
-from sklearn.metrics import mean_squared_error
+#from sklearn.metrics import mean_squared_error as MSE
 
 
 # CL arguments
-num_steps = int(sys.argv[1])
-num_particles = int(sys.argv[2])
+id = int(sys.argv[1])
+num_steps = int(sys.argv[2])
+Ddt = float(sys.argv[3])
+beta = float(sys.argv[4])
+x0 = float(sys.argv[5])
+
+# Number of particles
+Ns = np.linspace(100, 10000, 200).astype(int)
+num_particles = Ns[id-1]
 
 # Potential
-g = gaussian(A = np.array([1]),
-             M = np.array([0]),
-             S = np.array([1]))
-U = potential([g])
+g = gaussian(A=np.array([1]),
+             M=np.array([0]),
+             S=np.array([1]))
+U = potential([g], kBT=1.0/beta)
 
-# Parameters
+# Simulation Parameters
 parameters = {
     'name': 'OU_RMSD',
     'num_steps': num_steps,
     'num_dim': 1,
     'num_particles': num_particles,
-    'KBT': 1,
-    'Ddt': 0.01,
-    'x0': 1.5,
+    'kBT': 1.0/beta,
+    'Ddt': Ddt,
+    'x0': np.ones(num_particles)*x0,
     'potential': U
 }
 
-# Theory
-ts = np.arange(0, num_steps*0.01, 0.01)
-mean_theory = 1.5 * np.exp(-ts)
-var_theory = 1-exp(-2*ts)
-
 # Simulation
-xs = simulate(params=parameters).reshape((num_steps, num_particles))
+xs = simulate(parameters).reshape((num_steps, num_particles))
 
-# Mean, var
+# "RMSD"
+ts = np.arange(0, Ddt*num_steps, Ddt)
+mean_theory = x0 * np.exp(-beta * ts)
 mean_sim = np.mean(xs, axis=1)
-var_sim = np.var(xs, axis=1)
+diff = np.abs(mean_theory - mean_sim)
+data = np.c_[ts, mean_theory, mean_sim, diff]
 
-# RMSD
-rmsd_mean = mean_squared_error(mean_sim, mean_theory)
-rmsd_var = mean_squared_error(var_sim, var_theory)
-
-# Save data
-with open('data/RMSD_{}.data'.format(num_particles), 'w') as f:
-    f.write('{} {} {}\n'.format(num_particles, rmsd_mean, rmsd_var))
+# Save
+np.save('data/ou_b{:0.2f}_N{}.data'.format(beta, num_particles), data)

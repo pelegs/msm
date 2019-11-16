@@ -9,13 +9,13 @@ module load shared
 #$ -cwd
 #$ -pe *_fast 1
 #$ -notify
-#$ -t 1-100:1
+#$ -t 1-250:1
 
-#$ -o /home/psapir/tests/test.out
-#$ -e /home/psapir/tests/test.err
+#$ -o out
+#$ -e out
 
 trap "" TERM
 
 set -o pipefail
 
-./equib.py $1 $SGE_TASK_ID $2 $3 $4 $5
+./equib.py $1 $SGE_TASK_ID $2 $3 $4
