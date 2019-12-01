@@ -6,7 +6,7 @@ from tqdm import tqdm_notebook, tqdm
 import configparser
 import sys
 import pickle
-import itertools
+from itertools import product
 
 
 sqrt2pi = sqrt(pi)
@@ -32,7 +32,6 @@ class gaussian():
         return a * exp(-(x-m)**2/(2*s**2))
 
     def get_partial_derivative(self, pos, dim):
-        a = self.A[dim]
         m = self.M[dim]
         s = self.S[dim]
         return (m-pos[dim])/s**2 * self.get_value(pos)
@@ -41,7 +40,7 @@ class gaussian():
         return np.prod([self.get_1d_value(x, i) for i, x in enumerate(pos)])
 
     def integral_1D(self, d, a, b):
-        return s2p_1 * self.A[d]*self.S[d] * (erf((b-self.M[d])/(sqrt2*self.S[d])) - erf((a-self.M[d])/(sqrt2*self.S[d])))
+        return self.A[d]*self.S[d] * (erf((b-self.M[d])/(sqrt2*self.S[d])) - erf((a-self.M[d])/(sqrt2*self.S[d])))
 
     def integral(self, I):
         return np.prod([self.integral_1D(d, a, b) for d, (a, b) in enumerate(I)])
@@ -63,7 +62,6 @@ class potential:
         return -self.kBT * np.log(val)
 
     def get_force(self, pos):
-        # TODO: This needs to be properly vectorized
         norm_factor = self.kBT / np.sum([g.get_value(pos)
                                          for g in self.gaussians])
         force = np.zeros(self.num_dims)
@@ -72,15 +70,6 @@ class potential:
                                for g in self.gaussians])
         return norm_factor * force
 
-    def get_probability(self, x, dim=0):
-        """
-        Returns the probability of finding a particle
-        at position x at equilibrium, using this potential.
-        """
-        norm = s2p * np.sum([gaussian.S[dim]*gaussian.A[dim] for gaussian in self.gaussians])
-        integral = np.sum([gaussian.get_1d_value(x, dim) for gaussian in self.gaussians])
-        return integral / norm
-
     def integral(self, intervals):
         if len(intervals) != self.num_dims:
             raise ValueError('Number of intervals ({}) is different than number of dimensions ({})!'.format(len(intervals), self.num_dims))
@@ -88,8 +77,20 @@ class potential:
 
     def get_equilibrium_histogram_1D(self, bins, num_steps=1000, dim=0):
         I = np.array([self.integral([[bins[i], bins[i+1]]]) for i, b in enumerate(bins[:-1])])
-        #A = np.sum([g.A[dim]*g.S[dim] for g in self.gaussians])
-        return I / np.sum(I) * num_steps
+        return I/np.sum(I) * num_steps
+
+    def get_equilibrium_histogram_2D(self, bins_x, bins_y, num_steps=1000):
+        # Create intervals from bins
+        intervals_x = [[bins_x[i], bins_x[i+1]] for i, _ in enumerate(bins_x[:-1])]
+        intervals_y = np.array([[bins_y[i], bins_y[i+1]] for i, _ in enumerate(bins_y[:-1])])
+        interval_list = [intervals_x, intervals_y]
+
+        # Create an array of all possible 2D intervals
+        intervals = np.array(list(product(*interval_list)))
+
+        shape = (bins_x.shape[0]-1, bins_y.shape[0]-1)
+        I = np.array([self.integral(interval) for interval in intervals]).reshape(shape)
+        return I/np.sum(I) * num_steps
 
     def save(self, filename):
         with open(filename, 'wb') as file:
@@ -104,15 +105,14 @@ class potential:
             self.kBT = new.kBT
 
 
-def create_equilibrium_positions(potential, bins, num_particles=1000):
+def create_equilibrium_positions(potential, population, num_particles=1000):
     """
     Generates equilibrated positions according to a 1D potential,
     bins and number of partciels.
     """
-    population = bins
-    probability = potential.get_equilibrium_histogram_1D(bins)
+    probability = potential.get_equilibrium_histogram_1D(population)
     normalized_prob = probability / np.sum(probability)
-    return np.random.choice(population, p=normalized_prob, size=num_particles)
+    return np.random.choice(population[:-1], p=normalized_prob, size=num_particles)
 
 
 class zero_potential(potential):
@@ -149,6 +149,6 @@ def simulate(params, notebook=False):
         drift = np.zeros(shape=(num_dim, num_particles))
         for i in range(num_particles):
             drift[:,i] = A * U.get_force(xs[t-1,:,i])
-        noise = B * np.random.normal(size=(num_dim, num_particles)) / num_dim_sqrt
+        noise = B * np.random.normal(size=(num_dim, num_particles))
         xs[t,:,:] = xs[t-1,:,:] + drift + noise
     return xs
